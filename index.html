@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IaC: Terraform và Ansible notes · Trác Việt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#0972d3; --blue-d:#075aa6; --navbg:#232f3e;
+  --bg:#ffffff; --side:#fafbfc; --ink:#202124; --muted:#5f6368; --line:#e1e4e8;
+  --link:#0972d3; --code:#f3f5f8; --codeink:#1f2933;
+  --note:#e8f0fe; --note-b:#326ce5; --tip:#e6f4ea; --tip-b:#1e8e3e; --warn:#fff4e5; --warn-b:#e37400;
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --navbg:#161e2a; --bg:#0f141b; --side:#0f141b; --ink:#e4e8ee; --muted:#9aa5b1; --line:#252f3c;
+    --link:#8ab0ff; --code:#171f2a; --codeink:#dbe4ee;
+    --note:#14233f; --note-b:#5b8cf0; --tip:#10261a; --tip-b:#3fb860; --warn:#2b200f; --warn-b:#f0a03c; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --navbg:#161e2a; --bg:#0f141b; --side:#0f141b; --ink:#e4e8ee; --muted:#9aa5b1; --line:#252f3c;
+  --link:#8ab0ff; --code:#171f2a; --codeink:#dbe4ee;
+  --note:#14233f; --note-b:#5b8cf0; --tip:#10261a; --tip-b:#3fb860; --warn:#2b200f; --warn-b:#f0a03c; color-scheme:dark;
+}
+html{height:100%;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.65}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--navbg);z-index:40}
+a{color:var(--link)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:3px}
+
+/* navbar */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;height:56px;background:var(--navbg);color:#fff;
+  display:flex;align-items:center;gap:18px;padding:0 20px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:500;font-size:18px;white-space:nowrap}
+.brand svg{width:34px;height:34px;flex:none}
+.nav .links{display:flex;gap:18px;font-size:14px}
+.nav .links a{color:#fff;text-decoration:none;opacity:.9}
+.nav .links a:hover{opacity:1;text-decoration:underline}
+.nav .sp{flex:1}
+.search{position:relative;width:260px;max-width:40vw}
+.search input{width:100%;height:34px;border:0;border-radius:4px;padding:0 12px;font:inherit;font-size:14px;
+  background:rgba(255,255,255,.18);color:#fff}
+.search input::placeholder{color:rgba(255,255,255,.8)}
+.search input:focus{background:#fff;color:#202124;outline:2px solid #fff}
+.search input:focus::placeholder{color:#6b7280}
+.ibtn{background:transparent;border:1px solid rgba(255,255,255,.45);color:#fff;border-radius:4px;height:32px;padding:0 10px;
+  font:inherit;font-size:13px;cursor:pointer}
+.ibtn:hover{background:rgba(255,255,255,.14)}
+#burger{display:none;font-size:18px;padding:0 10px}
+
+/* layout */
+.shell{display:grid;grid-template-columns:290px minmax(0,1fr) 240px;max-width:1500px;margin:0 auto}
+aside#side{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));align-self:start;
+  height:calc(100vh - 56px - env(safe-area-inset-top,0px));overflow-y:auto;background:var(--side);
+  border-right:1px solid var(--line);padding:16px 12px 40px}
+.prog{font-size:13px;color:var(--muted);margin:0 8px 12px}
+.prog i{display:block;height:4px;background:var(--line);border-radius:2px;margin-top:6px;overflow:hidden}
+.prog i b{display:block;height:100%;background:var(--blue);width:0}
+.grp h3{font-size:12px;font-weight:700;color:var(--muted);margin:16px 8px 4px;letter-spacing:.02em}
+#side a{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;color:var(--ink);text-decoration:none;font-size:14px;line-height:1.35}
+#side a:hover{background:var(--code)}
+#side a.on{color:var(--blue);background:var(--note);font-weight:500}
+#side a.read::after{content:"✓";margin-left:auto;color:var(--tip-b);font-size:12px}
+.none{display:none;margin:16px 8px;font-size:14px;color:var(--muted)}
+#side a.by{margin:24px 4px 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;gap:10px;color:var(--ink)}
+#side a.by:hover{border-color:var(--blue);background:transparent}
+#side a.by span{display:flex;flex-direction:column;line-height:1.25}
+#side a.by small{color:var(--muted);font-size:12px}
+
+main{padding:28px 44px 80px;min-width:0}
+.crumb{font-size:13px;color:var(--muted);margin-bottom:6px}
+.page h1{font-size:34px;font-weight:500;line-height:1.2;margin:0 0 14px}
+.lead{font-size:18px;color:var(--muted);margin:0 0 8px;max-width:70ch}
+.page h2{font-size:24px;font-weight:500;margin:40px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.page h3{font-size:18px;font-weight:500;margin:26px 0 6px}
+.page p,.page li{max-width:76ch}
+.page ul,.page ol{padding-left:24px}
+.page li{margin:3px 0}
+code{font-family:var(--mono);font-size:.86em;background:var(--code);color:var(--codeink);padding:2px 5px;border-radius:3px}
+pre{position:relative;background:var(--code);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;margin:14px 0;line-height:1.5}
+pre code{background:none;padding:0;font-size:13px;white-space:pre}
+.copy{position:absolute;top:6px;right:6px;font:inherit;font-size:12px;background:var(--bg);color:var(--muted);border:1px solid var(--line);
+  border-radius:4px;padding:2px 8px;cursor:pointer}
+.copy:hover{color:var(--ink)}
+.tw{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--code);font-weight:500}
+.callout{border-left:4px solid var(--note-b);background:var(--note);padding:10px 16px;margin:18px 0;border-radius:0 6px 6px 0;max-width:76ch}
+.callout p{margin:4px 0}
+.callout>b:first-child{display:block;margin-bottom:2px}
+.callout.tip{background:var(--tip);border-color:var(--tip-b)}
+.callout.warn{background:var(--warn);border-color:var(--warn-b)}
+.dg{width:100%;height:auto;margin:16px 0;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.dg .box{fill:var(--bg);stroke:var(--blue);stroke-width:1.5}
+.dg .zone{fill:var(--code);stroke:var(--line);stroke-width:1.5}
+.dg .pod{fill:var(--note);stroke:var(--note-b);stroke-width:1}
+.dg text{fill:var(--ink);font-family:var(--font);font-size:13px}
+.dg .zt{font-weight:700;font-size:13px}
+.dg .ln{stroke:var(--blue);stroke-width:1.5;fill:none}
+.dg .dash{stroke-dasharray:5 4}
+
+.mark{display:flex;align-items:center;gap:10px;margin:40px 0 0;padding-top:20px;border-top:1px solid var(--line)}
+.mark button{font:inherit;font-size:14px;border:1px solid var(--blue);color:var(--blue);background:transparent;border-radius:4px;padding:6px 14px;cursor:pointer}
+.mark button[aria-pressed="true"]{background:var(--blue);color:#fff}
+.pn{display:flex;justify-content:space-between;gap:12px;margin-top:20px}
+.pn a{display:block;border:1px solid var(--line);border-radius:6px;padding:10px 16px;text-decoration:none;color:var(--ink);max-width:48%}
+.pn a:hover{border-color:var(--blue)}
+.pn small{display:block;color:var(--muted);font-size:12px}
+.pn a:last-child{text-align:right;margin-left:auto}
+
+nav#toc{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));align-self:start;
+  max-height:calc(100vh - 56px - env(safe-area-inset-top,0px));overflow-y:auto;padding:28px 16px 40px 0;font-size:13.5px}
+#toc h4{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:700}
+#toc a{display:block;padding:3px 0 3px 12px;border-left:2px solid var(--line);color:var(--muted);text-decoration:none;line-height:1.4}
+#toc a.l3{padding-left:26px}
+#toc a:hover{color:var(--ink)}
+#toc a.on{color:var(--blue);border-left-color:var(--blue);font-weight:500}
+footer{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;font-size:13px;color:var(--muted)}
+#scrim{display:none}
+
+@media (max-width:1100px){.shell{grid-template-columns:270px minmax(0,1fr)}nav#toc{display:none}}
+@media (max-width:820px){
+  .shell{grid-template-columns:1fr}
+  .nav .links{display:none}
+  #burger{display:inline-block}
+  .brand span{font-size:16px}
+  aside#side{position:fixed;left:0;bottom:0;top:calc(56px + env(safe-area-inset-top,0px));height:auto;width:300px;max-width:86vw;z-index:25;
+    transform:translateX(-102%);transition:transform .2s}
+  aside#side.open{transform:none}
+  #scrim.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20}
+  main{padding:20px 16px 64px}
+  .page h1{font-size:28px}
+  .search{width:auto;flex:1;max-width:none}
+  .sp{display:none}
+}
+@media (prefers-reduced-motion:reduce){aside#side{transition:none}}
+
+.nav{border-bottom:3px solid #844fba}
+.mk{background:#844fba;color:#ffffff;font-family:var(--mono);font-weight:700;font-size:13px;padding:4px 8px;border-radius:4px;letter-spacing:.02em}
+.brand{gap:10px}
+/* quiz */
+.qsum{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:16px 0 8px;padding:12px 16px;border:1px solid var(--line);border-radius:8px;background:var(--code)}
+.qsum b{font-weight:500}.qsum button{font:inherit;font-size:13px;padding:4px 12px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);cursor:pointer;margin-left:auto}
+.qs{border:1px solid var(--line);border-radius:8px;padding:18px 20px;margin:16px 0;background:var(--bg)}
+.qs.right{border-color:var(--tip-b)}.qs.wrong{border-color:#d13212}
+.qn{margin:0 0 6px;font-size:13px;color:var(--muted);font-weight:500}
+.qt{margin:0 0 12px;max-width:80ch}
+.qo{list-style:none;margin:0 0 10px;padding:0}
+.qo li{margin:6px 0;max-width:80ch}
+.qo label{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.qo label:hover{border-color:var(--blue)}
+.qo input{margin-top:5px;accent-color:var(--blue)}
+.qo li.ok label{border-color:var(--tip-b);background:var(--tip)}
+.qo li.bad label{border-color:#d13212;background:rgba(209,50,18,.1)}
+.qo li.miss label{border-color:var(--tip-b);border-style:dashed}
+.qh{margin:0 0 10px;font-size:13px;color:var(--muted)}
+.qb{font:inherit;font-size:14px;padding:7px 18px;border:0;border-radius:4px;background:var(--blue);color:#fff;cursor:pointer}
+.qb:disabled{opacity:.5;cursor:default}
+.qe{margin-top:14px;padding:12px 16px;border-left:4px solid var(--note-b);background:var(--note);border-radius:0 6px 6px 0;max-width:80ch}
+.qe b.v{display:block;margin-bottom:4px}
+
+/* ===== site theme ===== */
+:root{--blue:#6b3fa0;--blue-d:#55318a;--onacc:#fff;--navbg:#241a35;--bg:#fcfcfd;--side:#f5f6f8;--ink:#1d2229;--muted:#5b6571;--line:#dfe2e7;
+  --link:#6b3fa0;--code:#eef0f3;--codeink:#1d2229;--note:#edf1f6;--note-b:#51647b;--tip:#e7f4ea;--tip-b:#1f8a3b;--warn:#fff1e0;--warn-b:#c25b00}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--blue:#b99cf0;--blue-d:#b99cf0;--onacc:#1b0f2e;--navbg:#1a1327;--bg:#11151a;--side:#11151a;--ink:#e3e7ec;--muted:#98a3b0;--line:#252c35;
+    --link:#b99cf0;--code:#1a2027;--codeink:#dde4ec;--note:#18212c;--note-b:#7f95b0;--tip:#102419;--tip-b:#46b866;--warn:#2a1d0c;--warn-b:#f0a03c}
+}
+:root[data-theme="dark"]{--blue:#b99cf0;--blue-d:#b99cf0;--onacc:#1b0f2e;--navbg:#1a1327;--bg:#11151a;--side:#11151a;--ink:#e3e7ec;--muted:#98a3b0;--line:#252c35;
+  --link:#b99cf0;--code:#1a2027;--codeink:#dde4ec;--note:#18212c;--note-b:#7f95b0;--tip:#102419;--tip-b:#46b866;--warn:#2a1d0c;--warn-b:#f0a03c}
+:root[data-theme="light"]{--blue:#6b3fa0;--onacc:#fff}
+body{font-size:16px}
+.page h1{font-weight:600;letter-spacing:-.01em}
+.page h2{font-weight:600}
+.mark button[aria-pressed="true"],.qb{color:var(--onacc)}
+#side a.on{color:var(--link)}
+pre{background:#12171d;border-color:#28313c;color:#d6dde5}
+pre code{color:#d6dde5;font-size:13px}
+pre .ps{color:#844fba;user-select:none}
+pre .cm{color:#7f8c99}
+pre.ascii{line-height:1.25}
+pre.ascii code{font-size:12.5px}
+.copy{background:#1b222a;color:#9fb0c1;border-color:#2c3744}
+.copy:hover{color:#fff}
+.callout.lab{background:var(--code);border-color:var(--blue)}
+.callout.lab>b:first-child::before{content:"Lab · ";color:var(--blue)}
+.callout.lab pre{margin:10px 0}
+.qs.wrong{border-color:#c0392b}
+@media (max-width:560px){
+  .nav{gap:10px;padding:0 12px}
+  .brand>span:last-child{display:none}
+  .search input{min-width:0}
+  #theme{padding:0 8px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <button class="ibtn" id="burger" aria-label="Mở mục lục">☰</button>
+  <a class="brand" href="#overview" aria-label="IaC: Terraform và Ansible notes"><span class="mk">iac</span><span>IaC · Terraform · Ansible <span style="font-weight:400;opacity:.85">notes</span></span></a>
+  <nav class="links" aria-label="Liên kết nhanh">
+    <a href="https://tracviethustcs.github.io/">← Trác Việt</a>
+    <a href="#tf-workflow">Terraform</a>
+    <a href="#tf-state">State</a>
+    <a href="#tf-modules">Module</a>
+    <a href="#an-basics">Ansible</a>
+    <a href="#tf-vs-ansible">Kết hợp</a>
+    <a href="#quiz-tf">Luyện tập</a>
+  </nav>
+  <span class="sp"></span>
+  <div class="search"><input id="q" type="search" placeholder="Tìm trong ghi chú  ( / )" aria-label="Tìm trong ghi chú"></div>
+  <button class="ibtn" id="theme" aria-label="Đổi giao diện sáng/tối">Sáng/Tối</button>
+</header>
+<div id="scrim"></div>
+
+<div class="shell">
+  <aside id="side" aria-label="Mục lục">
+    <a href="https://tracviethustcs.github.io/" style="margin:0 0 10px;font-weight:500;color:var(--blue)">← Tất cả tài liệu</a>
+    <div class="prog"><span id="progtxt"></span><i><b id="progbar"></b></i></div>
+    <div id="side-links"></div>
+    <p class="none" id="none">Không có trang nào khớp từ khóa.</p>
+    <a class="by" href="https://github.com/TracVietHustCS" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span><b>TracViet</b><small>@TracVietHustCS</small></span>
+    </a>
+  </aside>
+
+  <main id="main">
+
+<!-- ============ OVERVIEW ============ -->
+<article class="page" data-id="overview" data-group="Bắt đầu" data-title="Tổng quan và cách học" hidden>
+<h1>Tổng quan và cách học</h1>
+<p class="lead">Bộ ghi chú về Infrastructure as Code (IaC) với hai công cụ phổ biến nhất: Terraform để dựng hạ tầng và Ansible để cấu hình máy. Đi từ nguyên tắc, workflow, state, module, đến CI/CD, kiểm thử, bảo mật và cách kết hợp hai công cụ.</p>
+<div class="callout warn"><b>Đọc trước khi dùng</b><p>Đây là ghi chú <b>tự học, tự soạn</b>, không phải tài liệu chính thức của HashiCorp, IBM hay Red Hat. Cú pháp, tên provider và tính năng thay đổi theo phiên bản (nhất là các tính năng mới của Terraform như <code>import</code> block, <code>terraform test</code>, khoá state bằng S3). Ghi chú không tra cứu trực tuyến nên có thể lỗi thời: hãy đối chiếu tài liệu hiện hành và chạy thử ở môi trường lab. <code>terraform apply</code>, <code>destroy</code> và <code>ansible-playbook</code> có thể thay đổi hoặc xoá tài nguyên thật.</p></div>
+<h2>Bạn sẽ làm được gì sau khi học xong</h2>
+<ul><li>Giải thích IaC giải quyết vấn đề gì, và khác nhau giữa mô hình khai báo (declarative) và thủ tục (procedural).</li><li>Dùng Terraform đúng workflow: <code>init</code>, <code>plan</code>, <code>apply</code>; hiểu state, backend, module, nhiều môi trường.</li><li>Đưa Terraform vào CI/CD an toàn: plan trên pull request, apply sau khi duyệt, kiểm tra chính sách và bảo mật.</li><li>Viết playbook, role, inventory Ansible idempotent; quản lý bí mật bằng Vault; triển khai cuốn chiếu.</li><li>Chọn đúng công cụ cho đúng việc và kết hợp Terraform với Ansible.</li></ul>
+<h2>Cấu trúc</h2>
+<div class="tw"><table><tr><th>Nhóm</th><th>Trang</th><th>Nội dung</th></tr><tr><td>Bắt đầu</td><td><a href="#iac-concepts">Nguyên tắc IaC</a></td><td>Khai báo, idempotent, drift, bất biến</td></tr><tr><td>Terraform</td><td><a href="#tf-workflow">Workflow</a>, <a href="#tf-hcl">HCL</a>, <a href="#tf-variables">Biến và output</a>, <a href="#tf-resources">Resource</a>, <a href="#tf-state">State</a>, <a href="#tf-modules">Module</a>, <a href="#tf-aws">Ví dụ AWS</a>, <a href="#tf-envs">Nhiều môi trường</a>, <a href="#tf-pipeline">CI/CD và kiểm thử</a>, <a href="#tf-troubleshooting">Xử lý sự cố</a></td><td>Từ cơ bản tới vận hành nhóm</td></tr><tr><td>Ansible</td><td><a href="#an-basics">Cơ bản</a>, <a href="#an-playbooks">Playbook</a>, <a href="#an-roles">Role</a>, <a href="#an-patterns">Mẫu thực tế</a></td><td>Cấu hình máy bằng SSH, không agent</td></tr><tr><td>Kết hợp</td><td><a href="#tf-vs-ansible">Terraform và Ansible</a>, <a href="#iac-security">Bảo mật IaC</a></td><td>Phối hợp và rủi ro</td></tr><tr><td>Tham chiếu</td><td><a href="#iac-cheatsheet">Cheat sheet</a>, <a href="#quiz-tf">Luyện tập Terraform</a>, <a href="#quiz-ansible">Luyện tập Ansible</a></td><td>Tra nhanh và tự kiểm tra</td></tr></table></div>
+<h2>Môi trường lab (không cần cloud)</h2>
+<p>Phần lớn lab chạy được trên máy của bạn:</p>
+<div class="tw"><table><tr><th>Cần</th><th>Cách</th></tr><tr><td>Terraform</td><td>Cài theo hướng dẫn chính thức. Có thể dùng <b>OpenTofu</b> (bản fork mã nguồn mở, lệnh là <code>tofu</code>, cú pháp gần như tương thích)</td></tr><tr><td>Provider không cần cloud</td><td><code>local</code>, <code>random</code>, <code>null</code>, và <code>docker</code> để dựng container thật</td></tr><tr><td>Ansible</td><td><code>pipx install ansible</code> (hoặc <code>pip install ansible</code>), chạy thử với <code>localhost</code> hoặc một VM Multipass/Docker có SSH</td></tr><tr><td>Cloud (tuỳ chọn)</td><td>Tài khoản AWS free tier cho trang <a href="#tf-aws">Ví dụ AWS</a>; luôn đặt cảnh báo chi phí và <code>terraform destroy</code> sau khi thử</td></tr></table></div>
+<pre><code>terraform version
+ansible --version</code></pre>
+<div class="callout tip"><b>Giấy phép Terraform</b><p>Từ giữa năm 2023, HashiCorp chuyển Terraform sang giấy phép Business Source License (không còn là mã nguồn mở theo định nghĩa OSI), và cộng đồng tạo ra nhánh <b>OpenTofu</b> do Linux Foundation quản lý. Với việc học và dùng nội bộ thường không có khác biệt thực tế; nếu bạn xây sản phẩm thương mại xung quanh Terraform, hãy đọc điều khoản hiện hành.</p></div>
+<p>Liên quan: máy ảo và container mà Ansible cấu hình xem <a href="https://tracviethustcs.github.io/linux-network-notes/" target="_blank" rel="noopener">Linux và mạng</a> và <a href="https://tracviethustcs.github.io/docker-container-notes/" target="_blank" rel="noopener">Docker</a>; phần triển khai ứng dụng trên Kubernetes dùng GitOps (<a href="https://tracviethustcs.github.io/k8s-study-notes/#gitops" target="_blank" rel="noopener">Flux, Argo CD</a>); tự động hoá pipeline xem <a href="https://tracviethustcs.github.io/cicd-release-notes/" target="_blank" rel="noopener">CI/CD</a>.</p>
+</article>
+<article class="page" data-id="iac-concepts" data-group="Bắt đầu" data-title="Nguyên tắc Infrastructure as Code" hidden>
+<h1>Nguyên tắc Infrastructure as Code</h1>
+<p class="lead">IaC nghĩa là mô tả hạ tầng bằng tệp văn bản được quản lý phiên bản, để việc dựng và thay đổi hạ tầng lặp lại được, xem lại được và kiểm thử được như mã nguồn.</p>
+<h2>Vì sao cần IaC</h2>
+<p>Dựng hạ tầng bằng tay (click trên console, SSH vào chỉnh) gây ra: không lặp lại được (mỗi máy một khác), không ai biết <b>vì sao</b> có thay đổi, khó khôi phục khi sự cố, và kiến thức nằm trong đầu một vài người. IaC đổi điều đó: hạ tầng nằm trong Git, thay đổi qua pull request có review, và có thể dựng lại từ đầu bằng một lệnh.</p>
+<h2>Khai báo và thủ tục</h2>
+<div class="tw"><table><tr><th></th><th>Khai báo (declarative)</th><th>Thủ tục (procedural)</th></tr><tr><td>Bạn mô tả</td><td><b>Trạng thái cuối mong muốn</b></td><td><b>Các bước</b> cần làm</td></tr><tr><td>Công cụ tính</td><td>Công cụ tự suy ra cần tạo, sửa, xoá gì</td><td>Bạn tự lo thứ tự và điều kiện</td></tr><tr><td>Ví dụ</td><td>Terraform, CloudFormation, Kubernetes manifest</td><td>Script shell, một số playbook viết kiểu "chạy lệnh"</td></tr><tr><td>Ưu</td><td>Chạy lại an toàn, thấy trước thay đổi (plan)</td><td>Linh hoạt cho việc đặc thù</td></tr></table></div>
+<p>Ansible nằm giữa hai bên: module của nó mang tính khai báo (<code>state: present</code>), nhưng playbook là danh sách tác vụ theo thứ tự.</p>
+<h2>Các khái niệm nền</h2>
+<ul><li><b>Idempotent</b>: chạy một thao tác nhiều lần cho cùng kết quả như chạy một lần. Với IaC, đây là điều kiện để dám chạy lại. Module <code>apt</code> với <code>state: present</code> idempotent; <code>command: useradd bob</code> thì không (lần hai báo lỗi).</li><li><b>Drift</b> (lệch cấu hình): thực tế khác với mã, do ai đó sửa tay, hoặc hệ thống tự thay đổi. Phát hiện bằng <code>terraform plan</code>, chạy playbook ở chế độ <code>--check</code>, hoặc công cụ GitOps tự đối chiếu liên tục.</li><li><b>Hạ tầng bất biến (immutable)</b> so với <b>có thể biến đổi (mutable)</b>: bất biến là thay vì sửa máy đang chạy thì dựng máy mới từ image rồi bỏ máy cũ (image dựng bằng Packer, hoặc container); biến đổi là cập nhật tại chỗ (thường dùng Ansible). Bất biến dễ dự đoán và quay lui hơn; biến đổi tiện cho máy sống lâu và thay đổi nhỏ.</li><li><b>Blast radius</b> (bán kính ảnh hưởng): một thay đổi hỏng ảnh hưởng tới bao nhiêu thứ. Chia nhỏ state và môi trường để một lỗi không làm hỏng tất cả.</li><li><b>Nguồn sự thật duy nhất</b>: Git là nơi mô tả hạ tầng đúng; sửa tay ngoài Git là nợ cần trả.</li></ul>
+<h2>Quy tắc làm việc</h2>
+<ol><li>Mọi thay đổi hạ tầng đi qua <b>Git và review</b>.</li><li><b>Xem trước khi áp dụng</b> (<code>terraform plan</code>, <code>ansible-playbook --check --diff</code>), và đọc kỹ phần xoá hoặc thay thế.</li><li><b>Không sửa tay</b> tài nguyên do IaC quản lý; nếu bắt buộc thì ghi lại và đưa vào mã ngay.</li><li><b>Bí mật không nằm trong mã</b> (xem <a href="#iac-security">Bảo mật IaC</a>).</li><li>Tách <b>môi trường</b> và <b>state</b> để giảm blast radius.</li><li>Kiểm thử và chạy tự động trong <b>pipeline</b>, không từ laptop cá nhân khi đã có nhóm.</li><li>Ghim phiên bản công cụ và provider để kết quả lặp lại được.</li></ol>
+<h2>Công cụ trong bản đồ</h2>
+<div class="tw"><table><tr><th>Việc</th><th>Công cụ phổ biến</th></tr><tr><td>Dựng hạ tầng (cloud, mạng, dịch vụ)</td><td>Terraform, OpenTofu, CloudFormation, Pulumi, Crossplane</td></tr><tr><td>Cấu hình máy (gói, file, dịch vụ)</td><td>Ansible, Chef, Puppet, Salt</td></tr><tr><td>Dựng image máy ảo</td><td>Packer</td></tr><tr><td>Triển khai ứng dụng lên Kubernetes</td><td>Helm, Kustomize, Flux, Argo CD</td></tr></table></div>
+<p>Hai ghi chú này tập trung vào Terraform và Ansible vì chúng bổ sung cho nhau: Terraform "dựng nhà", Ansible "bày đồ vào nhà" (xem <a href="#tf-vs-ansible">Terraform và Ansible</a>).</p>
+</article>
+<article class="page" data-id="tf-workflow" data-group="Terraform" data-title="Cài đặt và workflow" hidden>
+<h1>Cài đặt và workflow</h1>
+<p class="lead">Terraform đọc mô tả hạ tầng bằng HCL, so sánh với state, lập kế hoạch thay đổi rồi thực hiện qua provider. Vòng lặp <code>init</code>, <code>plan</code>, <code>apply</code> là cốt lõi của mọi thứ.</p>
+<h2>Terraform làm gì</h2>
+<pre class="ascii"><code>   *.tf (mã HCL)  --+
+                    |--&gt; terraform plan --&gt; so sánh --&gt; kế hoạch: +tạo ~sửa -xoá
+   state            --+        ^                          |
+   (cái đã tạo)               |                          v
+                       API của nhà cung cấp  &lt;--- terraform apply (qua provider)
+                       (AWS, Azure, Docker...)</code></pre>
+<ul><li><b>Configuration</b> (<code>.tf</code>): mô tả trạng thái mong muốn.</li><li><b>Provider</b>: plugin nói chuyện với một API (AWS, Azure, GCP, Kubernetes, Docker, GitHub...).</li><li><b>State</b>: bản ghi Terraform đã tạo gì và thuộc tính của chúng (xem <a href="#tf-state">State</a>).</li><li><b>Plan</b>: so mã với state và thực tế, sinh danh sách thay đổi cần làm.</li></ul>
+<h2>Workflow cơ bản</h2>
+<pre><code>terraform init        # tải provider và module, khởi tạo backend (chạy lại khi đổi provider/module/backend)
+terraform fmt         # định dạng mã chuẩn
+terraform validate    # kiểm tra cú pháp và tham chiếu (không gọi API)
+terraform plan        # xem trước thay đổi
+terraform apply       # thực hiện (hỏi xác nhận)
+terraform destroy     # xoá mọi thứ do cấu hình này quản lý</code></pre>
+<p>Trong CI nên tách plan và apply, lưu plan thành tệp để apply đúng cái đã duyệt:</p>
+<pre><code>terraform plan -out=tfplan
+terraform show tfplan                 # xem lại kế hoạch
+terraform apply tfplan                # áp dụng đúng kế hoạch đó</code></pre>
+<p>Ký hiệu trong plan: <code>+</code> tạo mới, <code>-</code> xoá, <code>~</code> sửa tại chỗ, <code>-/+</code> <b>thay thế</b> (xoá rồi tạo lại: chú ý nếu là database hay ổ đĩa), <code>&lt;=</code> đọc data source. Dòng cuối <code>Plan: 2 to add, 1 to change, 0 to destroy.</code> là thứ phải đọc kỹ nhất.</p>
+<h2>Cấu trúc thư mục</h2>
+<pre><code>.
+├── main.tf              # tài nguyên chính
+├── variables.tf         # khai báo biến
+├── outputs.tf           # giá trị xuất ra
+├── providers.tf         # cấu hình provider và phiên bản
+├── terraform.tfvars     # giá trị biến (không chứa bí mật nếu commit)
+├── .terraform.lock.hcl  # khoá phiên bản provider: COMMIT file này
+└── .terraform/          # thư mục làm việc: KHÔNG commit</code></pre>
+<p>Mọi file <code>.tf</code> trong cùng thư mục được ghép thành một cấu hình; tên file chỉ là quy ước.</p>
+<h2>Ghim phiên bản</h2>
+<pre><code>terraform {
+  required_version = "&gt;= 1.6.0, &lt; 2.0.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~&gt; 5.0"          # &gt;= 5.0, &lt; 6.0
+    }
+  }
+}</code></pre>
+<ul><li><code>required_version</code> giới hạn phiên bản Terraform; <code>version</code> giới hạn provider.</li><li><code>.terraform.lock.hcl</code> ghi lại phiên bản và mã băm chính xác của provider đã chọn: <b>commit</b> để mọi người và CI dùng cùng bản. Nâng cấp có chủ đích bằng <code>terraform init -upgrade</code>.</li><li>Mỗi lần nâng provider lớn có thể có thay đổi phá vỡ: đọc changelog và chạy plan trên môi trường thử.</li></ul>
+<h2>.gitignore điển hình</h2>
+<pre><code>.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfplan
+terraform.tfvars        # nếu chứa giá trị nhạy cảm
+override.tf</code></pre>
+<div class="callout lab"><b>Vòng lặp đầu tiên, không cần cloud</b><pre><code>mkdir -p ~/tf1 &amp;&amp; cd ~/tf1
+cat &gt; main.tf &lt;&lt;'EOF'
+terraform {
+  required_providers {
+    local  = { source = "hashicorp/local" }
+    random = { source = "hashicorp/random" }
+  }
+}
+resource "random_pet" "name" { length = 2 }
+resource "local_file" "hello" {
+  filename = "${path.module}/hello-${random_pet.name.id}.txt"
+  content  = "Xin chào từ Terraform\n"
+}
+output "file" { value = local_file.hello.filename }
+EOF
+terraform init
+terraform plan
+terraform apply -auto-approve
+ls; cat hello-*.txt
+terraform plan                 # không còn thay đổi: idempotent
+rm hello-*.txt; terraform plan # phát hiện drift: file đã bị xoá tay
+terraform apply -auto-approve  # tạo lại
+terraform destroy -auto-approve</code></pre>
+<p>Quan sát: lần plan thứ hai nói gì, và lần plan sau khi xoá tay file nói gì? Đây là drift mà plan phát hiện.</p></div>
+</article>
+<article class="page" data-id="tf-hcl" data-group="Terraform" data-title="Ngôn ngữ HCL: khối, kiểu dữ liệu và biểu thức" hidden>
+<h1>Ngôn ngữ HCL: khối, kiểu dữ liệu và biểu thức</h1>
+<p class="lead">HCL (HashiCorp Configuration Language) là ngôn ngữ khai báo đọc được của Terraform. Chỉ có vài loại khối và một số biểu thức cần nắm để đọc hiểu hầu hết mã Terraform.</p>
+<h2>Khối và đối số</h2>
+<pre><code>resource "aws_instance" "web" {        # khối: loại, nhãn loại tài nguyên, nhãn tên
+  ami           = "ami-0abcdef"         # đối số: tên = giá trị
+  instance_type = "t3.micro"
+  tags = {                              # map
+    Name = "web"
+  }
+  root_block_device {                   # khối lồng nhau
+    volume_size = 20
+  }
+}</code></pre>
+<div class="tw"><table><tr><th>Khối</th><th>Dùng để</th></tr><tr><td><code>terraform</code></td><td>Cấu hình Terraform: phiên bản, provider cần, backend</td></tr><tr><td><code>provider</code></td><td>Cấu hình một provider (vùng, xác thực)</td></tr><tr><td><code>resource</code></td><td>Khai báo một tài nguyên cần quản lý</td></tr><tr><td><code>data</code></td><td>Đọc thông tin đã có, không tạo</td></tr><tr><td><code>variable</code></td><td>Đầu vào</td></tr><tr><td><code>output</code></td><td>Giá trị đầu ra</td></tr><tr><td><code>locals</code></td><td>Giá trị tính toán nội bộ</td></tr><tr><td><code>module</code></td><td>Gọi module khác</td></tr></table></div>
+<p>Tham chiếu tới tài nguyên: <code>LOẠI.TÊN.THUỘC_TÍNH</code>, ví dụ <code>aws_instance.web.id</code>; tới biến: <code>var.region</code>; tới local: <code>local.name</code>; tới data: <code>data.aws_ami.ubuntu.id</code>; tới module: <code>module.vpc.vpc_id</code>.</p>
+<h2>Kiểu dữ liệu</h2>
+<div class="tw"><table><tr><th>Kiểu</th><th>Ví dụ</th></tr><tr><td><code>string</code>, <code>number</code>, <code>bool</code></td><td><code>"abc"</code>, <code>3</code>, <code>true</code></td></tr><tr><td><code>list(T)</code></td><td><code>["a", "b"]</code></td></tr><tr><td><code>set(T)</code></td><td>Danh sách không trùng, không có thứ tự</td></tr><tr><td><code>map(T)</code></td><td><code>{ env = "dev", team = "x" }</code></td></tr><tr><td><code>object({...})</code></td><td><code>{ name = string, size = number }</code></td></tr><tr><td><code>tuple([...])</code></td><td>Danh sách với kiểu từng phần tử</td></tr></table></div>
+<h2>Biểu thức</h2>
+<pre><code>locals {
+  name_prefix = "${var.project}-${var.env}"              # nội suy chuỗi
+  is_prod     = var.env == "prod"
+  size        = local.is_prod ? "m5.large" : "t3.micro"  # điều kiện
+  upper_names = [for n in var.names : upper(n)]          # vòng for tạo list
+  by_name     = { for s in var.servers : s.name =&gt; s }   # tạo map
+  first_az    = var.azs[0]
+  merged_tags = merge(var.common_tags, { Name = local.name_prefix })
+}</code></pre>
+<p>Chuỗi nhiều dòng dùng heredoc:</p>
+<pre><code>user_data = &lt;&lt;-EOT
+  #!/bin/bash
+  echo "xin chào" &gt; /tmp/hello
+EOT</code></pre>
+<h2>Hàm hay dùng</h2>
+<div class="tw"><table><tr><th>Nhóm</th><th>Hàm</th></tr><tr><td>Chuỗi</td><td><code>format</code>, <code>join</code>, <code>split</code>, <code>replace</code>, <code>lower</code>, <code>upper</code>, <code>trimspace</code></td></tr><tr><td>Tập hợp</td><td><code>length</code>, <code>merge</code>, <code>lookup</code>, <code>concat</code>, <code>flatten</code>, <code>distinct</code>, <code>keys</code>, <code>values</code>, <code>toset</code>, <code>tolist</code></td></tr><tr><td>Số và điều kiện</td><td><code>min</code>, <code>max</code>, <code>ceil</code>, <code>coalesce</code>, <code>try</code>, <code>can</code></td></tr><tr><td>Tệp</td><td><code>file</code>, <code>templatefile</code>, <code>filebase64</code>, <code>fileexists</code></td></tr><tr><td>Mã hoá</td><td><code>base64encode</code>, <code>jsonencode</code>, <code>yamlencode</code>, <code>sha256</code></td></tr><tr><td>Mạng</td><td><code>cidrsubnet</code>, <code>cidrhost</code>: chia dải IP</td></tr></table></div>
+<p><code>cidrsubnet("10.0.0.0/16", 8, 2)</code> cho <code>10.0.2.0/24</code>. Dùng <code>terraform console</code> để thử biểu thức tương tác:</p>
+<pre><code>terraform console
+&gt; cidrsubnet("10.0.0.0/16", 8, 2)
+&gt; [for n in ["a","b"] : upper(n)]</code></pre>
+<h2>Quy ước viết tốt</h2>
+<ul><li>Đặt tên tài nguyên bằng chữ thường và gạch dưới, mô tả vai trò (<code>aws_security_group.web</code>, không phải <code>sg1</code>).</li><li>Một khối <code>locals</code> cho giá trị lặp lại; tránh lặp chuỗi.</li><li>Chạy <code>terraform fmt</code> (và trong CI <code>terraform fmt -check</code>).</li><li>Chú thích bằng <code>#</code> hoặc <code>//</code>; giải thích <b>vì sao</b>, không lặp lại cái mã đã nói.</li></ul>
+</article>
+<article class="page" data-id="tf-variables" data-group="Terraform" data-title="Biến, local và output" hidden>
+<h1>Biến, local và output</h1>
+<p class="lead">Biến làm cấu hình tái sử dụng được, output chuyển thông tin ra ngoài (hoặc sang module khác). Kiểm tra giá trị đầu vào và đánh dấu nhạy cảm là hai thói quen đáng có.</p>
+<h2>Khai báo biến</h2>
+<pre><code>variable "env" {
+  type        = string
+  description = "Tên môi trường: dev, stg hoặc prod"
+  default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "stg", "prod"], var.env)
+    error_message = "env phải là dev, stg hoặc prod."
+  }
+}
+
+variable "instance_count" {
+  type    = number
+  default = 2
+}
+
+variable "db_password" {
+  type      = string
+  sensitive = true          # ẩn khỏi output của plan/apply
+}
+
+variable "subnets" {
+  type = list(object({
+    name = string
+    cidr = string
+  }))
+}</code></pre>
+<ul><li>Biến không có <code>default</code> thì <b>bắt buộc</b> phải truyền giá trị.</li><li><code>validation</code> cho thông báo lỗi sớm và rõ, trước khi gọi API.</li><li><code>sensitive = true</code> chỉ ẩn khỏi <b>hiển thị trên màn hình</b>; giá trị <b>vẫn nằm trong state</b> dưới dạng văn bản rõ: xem <a href="#tf-state">State</a> và <a href="#iac-security">Bảo mật IaC</a>.</li></ul>
+<h2>Cách truyền giá trị và thứ tự ưu tiên</h2>
+<p>Từ thấp tới cao (cái sau thắng cái trước):</p>
+<ol><li>Giá trị <code>default</code> trong khai báo.</li><li>Biến môi trường <code>TF_VAR_tên</code> (ví dụ <code>TF_VAR_db_password</code>).</li><li><code>terraform.tfvars</code> (hoặc <code>terraform.tfvars.json</code>).</li><li>Các file <code>*.auto.tfvars</code> (theo thứ tự chữ cái).</li><li>Tuỳ chọn dòng lệnh <code>-var</code> và <code>-var-file</code> (theo thứ tự xuất hiện).</li></ol>
+<pre><code>terraform apply -var-file=envs/prod.tfvars -var 'instance_count=4'
+export TF_VAR_db_password='...'       # bí mật: dùng biến môi trường, không ghi vào file commit</code></pre>
+<p>Ví dụ <code>envs/prod.tfvars</code>:</p>
+<pre><code>env            = "prod"
+instance_count = 4
+subnets = [
+  { name = "a", cidr = "10.0.1.0/24" },
+  { name = "b", cidr = "10.0.2.0/24" },
+]</code></pre>
+<h2>Locals</h2>
+<pre><code>locals {
+  name = "${var.project}-${var.env}"
+  common_tags = {
+    Project = var.project
+    Env     = var.env
+    Owner   = "platform"
+  }
+}</code></pre>
+<p><code>locals</code> là giá trị tính toán <b>nội bộ</b> của module, không phải đầu vào: dùng để tránh lặp và đặt tên cho biểu thức phức tạp.</p>
+<h2>Output</h2>
+<pre><code>output "web_url" {
+  value       = "http://${aws_instance.web.public_dns}"
+  description = "Địa chỉ truy cập web"
+}
+
+output "db_endpoint" {
+  value     = aws_db_instance.main.endpoint
+  sensitive = true
+}</code></pre>
+<pre><code>terraform output                 # liệt kê
+terraform output -raw web_url    # in giá trị thô, tiện dùng trong script
+terraform output -json</code></pre>
+<p>Output là cách module <b>trả kết quả</b> cho nơi gọi nó, và cách một cấu hình chia sẻ thông tin với cấu hình khác (qua <code>terraform_remote_state</code> hoặc data source).</p>
+<h2>Dữ liệu từ bên ngoài (data source)</h2>
+<pre><code>data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]            # Canonical
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-noble-24.04-amd64-server-*"]
+  }
+}
+
+resource "aws_instance" "web" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t3.micro"
+}</code></pre>
+<p><code>data</code> <b>đọc</b> thông tin đã tồn tại (AMI mới nhất, VPC đã có, tài khoản AWS hiện tại) mà không quản lý nó. Cẩn thận với data source có "mới nhất": kết quả đổi theo thời gian có thể gây thay thế tài nguyên ngoài ý muốn.</p>
+<div class="callout lab"><b>Biến, validation và thứ tự ưu tiên</b><pre><code>mkdir -p ~/tf2 &amp;&amp; cd ~/tf2
+cat &gt; main.tf &lt;&lt;'EOF'
+variable "env" {
+  type = string
+  default = "dev"
+  validation {
+    condition     = contains(["dev", "stg", "prod"], var.env)
+    error_message = "env phải là dev, stg hoặc prod."
+  }
+}
+locals { name = "app-${var.env}" }
+output "name" { value = local.name }
+EOF
+terraform init -input=false &gt;/dev/null
+terraform apply -auto-approve | grep name
+echo 'env = "stg"' &gt; terraform.tfvars; terraform apply -auto-approve | grep name
+TF_VAR_env=prod terraform apply -auto-approve | grep name
+terraform apply -auto-approve -var env=dev | grep name
+terraform apply -auto-approve -var env=test        # lỗi validation</code></pre>
+<p>Ghi lại kết quả mỗi lần và đối chiếu với thứ tự ưu tiên ở trên.</p></div>
+</article>
+<article class="page" data-id="tf-resources" data-group="Terraform" data-title="Resource, phụ thuộc và meta-argument" hidden>
+<h1>Resource, phụ thuộc và meta-argument</h1>
+<p class="lead">Resource là đơn vị cơ bản của Terraform. Hiểu cách Terraform suy ra thứ tự, và các công cụ để tạo nhiều bản (<code>count</code>, <code>for_each</code>) và kiểm soát vòng đời, giúp tránh hầu hết những bất ngờ khi <code>apply</code>.</p>
+<h2>Phụ thuộc</h2>
+<p>Terraform dựng <b>đồ thị phụ thuộc</b> từ các tham chiếu giữa tài nguyên, rồi tạo song song những thứ không phụ thuộc nhau và theo thứ tự những thứ phụ thuộc.</p>
+<pre><code>resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_subnet" "a" {
+  vpc_id     = aws_vpc.main.id        # tham chiếu =&gt; phụ thuộc ngầm: VPC trước, subnet sau
+  cidr_block = "10.0.1.0/24"
+}</code></pre>
+<p>Khi sự phụ thuộc <b>không</b> thể hiện qua tham chiếu (ví dụ cần một quyền IAM tồn tại trước nhưng không dùng thuộc tính nào của nó), dùng <code>depends_on</code> tường minh, nhưng chỉ khi cần vì nó làm giảm tính song song:</p>
+<pre><code>resource "aws_instance" "app" {
+  # ...
+  depends_on = [aws_iam_role_policy.app]
+}</code></pre>
+<p>Xem đồ thị: <code>terraform graph | dot -Tpng &gt; graph.png</code> (cần Graphviz).</p>
+<h2>count và for_each</h2>
+<p>Tạo nhiều bản của một tài nguyên:</p>
+<pre><code><span class="cm"># count: nhiều bản đánh số 0, 1, 2...</span>
+resource "aws_instance" "web" {
+  count         = var.instance_count
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t3.micro"
+  tags          = { Name = "web-${count.index}" }
+}
+
+<span class="cm"># for_each: mỗi phần tử một khoá ổn định</span>
+resource "aws_subnet" "this" {
+  for_each          = { for s in var.subnets : s.name =&gt; s }
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = each.value.cidr
+  availability_zone = each.value.az
+  tags              = { Name = each.key }
+}</code></pre>
+<div class="tw"><table><tr><th></th><th><code>count</code></th><th><code>for_each</code></th></tr><tr><td>Định danh</td><td>Chỉ số (<code>web[0]</code>, <code>web[1]</code>)</td><td>Khoá (<code>subnet["a"]</code>)</td></tr><tr><td>Xoá phần tử ở giữa</td><td>Các phần tử sau <b>bị đánh số lại</b>, có thể bị thay thế</td><td>Chỉ phần tử đó bị xoá</td></tr><tr><td>Dùng khi</td><td>Bản giống hệt nhau, hoặc bật/tắt (<code>count = var.enabled ? 1 : 0</code>)</td><td>Mỗi bản có danh tính riêng</td></tr></table></div>
+<p>Quy tắc thực tế: ưu tiên <code>for_each</code> với khoá có ý nghĩa; chỉ dùng <code>count</code> cho số lượng thuần tuý hoặc cờ bật/tắt. <code>for_each</code> cần tập khoá <b>biết được lúc plan</b>.</p>
+<h2>lifecycle</h2>
+<pre><code>resource "aws_db_instance" "main" {
+  # ...
+  lifecycle {
+    prevent_destroy       = true             # từ chối plan nào xoá tài nguyên này
+    create_before_destroy = true             # khi phải thay thế: tạo cái mới trước rồi mới xoá cái cũ
+    ignore_changes        = [tags["LastScan"]]   # bỏ qua thay đổi do hệ thống khác sửa
+    replace_triggered_by  = [aws_launch_template.app]
+  }
+}</code></pre>
+<div class="tw"><table><tr><th>Thuộc tính</th><th>Dùng để</th></tr><tr><td><code>prevent_destroy</code></td><td>Bảo vệ tài nguyên quan trọng (database, bucket dữ liệu) khỏi bị xoá nhầm</td></tr><tr><td><code>create_before_destroy</code></td><td>Thay thế không gián đoạn (thường với thứ đứng sau load balancer)</td></tr><tr><td><code>ignore_changes</code></td><td>Chấp nhận có thứ do bên ngoài thay đổi (autoscaling đổi số lượng, tag do công cụ khác)</td></tr><tr><td><code>replace_triggered_by</code></td><td>Thay thế tài nguyên khi một tài nguyên khác đổi</td></tr></table></div>
+<h2>Một số khối đáng biết</h2>
+<p><b>dynamic block</b>: tạo các khối lồng nhau lặp theo dữ liệu.</p>
+<pre><code>resource "aws_security_group" "web" {
+  name   = "web"
+  vpc_id = aws_vpc.main.id
+  dynamic "ingress" {
+    for_each = var.allowed_ports
+    content {
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = var.allowed_cidrs
+    }
+  }
+}</code></pre>
+<p><b>precondition và postcondition</b>: kiểm tra giả định ngay trong <code>lifecycle</code> (có thông báo lỗi rõ).</p>
+<p><b>provisioner</b> (<code>local-exec</code>, <code>remote-exec</code>): chạy lệnh sau khi tạo tài nguyên. Tài liệu của Terraform coi đây là <b>phương án cuối cùng</b>: kết quả không nằm trong state, khó lặp lại. Việc cấu hình máy nên giao cho <code>cloud-init</code>, image dựng sẵn hoặc Ansible (<a href="#tf-vs-ansible">Terraform và Ansible</a>).</p>
+<h2>Thay thế và xoá có chủ đích</h2>
+<pre><code>terraform apply -replace="aws_instance.web[0]"     # ép tạo lại một tài nguyên
+terraform destroy -target=aws_instance.web         # chỉ dùng khi thật cần</code></pre>
+<p><code>-target</code> bỏ qua đồ thị đầy đủ, nên chỉ dùng cho tình huống đặc biệt, không phải thói quen. Lệnh <code>terraform taint</code> cũ đã được thay bằng <code>-replace</code>.</p>
+<div class="callout lab"><b>count và for_each khi xoá phần tử ở giữa</b><pre><code>mkdir -p ~/tf3 &amp;&amp; cd ~/tf3
+cat &gt; main.tf &lt;&lt;'EOF'
+terraform {
+  required_providers {
+    local = { source = "hashicorp/local" }
+  }
+}
+variable "names" { default = ["a", "b", "c"] }
+resource "local_file" "by_count" {
+  count    = length(var.names)
+  filename = "${path.module}/count-${var.names[count.index]}.txt"
+  content  = var.names[count.index]
+}
+resource "local_file" "by_key" {
+  for_each = toset(var.names)
+  filename = "${path.module}/key-${each.key}.txt"
+  content  = each.key
+}
+EOF
+terraform init &gt;/dev/null &amp;&amp; terraform apply -auto-approve | tail -2
+terraform plan -var='names=["a","c"]'        # bỏ "b"</code></pre>
+<p>Quan sát: với <code>count</code>, bỏ <code>b</code> thì <code>count-c.txt</code> có bị đổi không? Với <code>for_each</code> thì sao? Đây là lý do nên chọn <code>for_each</code> khi mỗi phần tử có danh tính riêng.</p></div>
+</article>
+<article class="page" data-id="tf-state" data-group="Terraform" data-title="State: lưu trữ, khoá và các thao tác" hidden>
+<h1>State: lưu trữ, khoá và các thao tác</h1>
+<p class="lead">State là bộ nhớ của Terraform: nó ghi Terraform đã tạo những gì và ánh xạ mã sang tài nguyên thật. Hầu hết sự cố nghiêm trọng của Terraform đều liên quan tới state.</p>
+<h2>State chứa gì và vì sao quan trọng</h2>
+<p>Tệp <code>terraform.tfstate</code> (JSON) lưu danh sách tài nguyên đã quản lý, thuộc tính của chúng, và ánh xạ giữa khối trong mã và ID thật (ví dụ <code>aws_instance.web</code> là <code>i-0abc...</code>). Khi plan, Terraform đọc state, làm mới thông tin từ API rồi so với mã.</p>
+<p>Hệ quả:</p>
+<ul><li><b>Mất state</b> nghĩa là Terraform "quên" mọi thứ nó đã tạo: lần apply sau sẽ cố tạo lại tất cả.</li><li><b>State chứa dữ liệu nhạy cảm</b> dưới dạng văn bản rõ (mật khẩu database, khoá, <code>sensitive</code> cũng không được mã hoá trong state). Bảo vệ state như bí mật.</li><li><b>Không sửa tay</b> file state. Dùng các lệnh <code>terraform state</code>.</li><li><b>Không commit</b> state vào Git.</li></ul>
+<h2>Backend từ xa</h2>
+<p>Với làm việc nhóm, state phải nằm ở <b>backend từ xa</b> có <b>khoá</b> (để hai người không apply cùng lúc) và <b>mã hoá, sao lưu</b>.</p>
+<pre><code>terraform {
+  backend "s3" {
+    bucket       = "myorg-terraform-state"
+    key          = "prod/network/terraform.tfstate"
+    region       = "ap-southeast-1"
+    encrypt      = true
+    use_lockfile = true          # khoá bằng chính S3 (các bản Terraform mới)
+    # dynamodb_table = "tf-locks"   # cách cũ: khoá bằng DynamoDB
+  }
+}</code></pre>
+<ul><li>Bật <b>versioning</b> cho bucket để khôi phục state cũ khi hỏng; chặn truy cập công khai; giới hạn quyền ghi bằng IAM.</li><li>Cách khoá bằng S3 (<code>use_lockfile</code>) có ở các bản Terraform gần đây; trước đó dùng bảng DynamoDB. Kiểm tra theo phiên bản bạn dùng.</li><li>Các backend khác: Azure Blob, GCS, Terraform Cloud/HCP Terraform, GitLab, Consul, PostgreSQL.</li><li>Đổi backend rồi chạy <code>terraform init -migrate-state</code> để chuyển state.</li></ul>
+<p>Mỗi <b>key</b> là một state riêng. Chia state theo ranh giới hợp lý (mạng, dữ liệu, ứng dụng, từng môi trường) để giảm blast radius và thời gian plan.</p>
+<h2>Chia sẻ thông tin giữa các state</h2>
+<pre><code>data "terraform_remote_state" "network" {
+  backend = "s3"
+  config = {
+    bucket = "myorg-terraform-state"
+    key    = "prod/network/terraform.tfstate"
+    region = "ap-southeast-1"
+  }
+}
+<span class="cm"># dùng: data.terraform_remote_state.network.outputs.vpc_id</span></code></pre>
+<p>Cách này gắn chặt hai cấu hình và đòi quyền đọc toàn bộ state. Thay thế thường tốt hơn: dùng data source tra cứu tài nguyên bằng tag, hoặc SSM Parameter Store.</p>
+<h2>Các lệnh state</h2>
+<pre><code>terraform state list                              # liệt kê tài nguyên trong state
+terraform state show aws_instance.web             # chi tiết một tài nguyên
+terraform state mv aws_instance.web aws_instance.app    # đổi địa chỉ (khi đổi tên/di chuyển trong mã)
+terraform state rm aws_instance.legacy            # gỡ khỏi state mà không xoá tài nguyên thật
+terraform import aws_instance.web i-0abc123       # đưa tài nguyên đã có vào state
+terraform plan -refresh-only                      # chỉ cập nhật state theo thực tế, xem drift
+terraform force-unlock LOCK_ID                    # gỡ khoá bị kẹt (cẩn thận)</code></pre>
+<h2>Đổi tên và tái cấu trúc không phá huỷ</h2>
+<p>Đổi tên tài nguyên trong mã mà không báo cho Terraform sẽ bị hiểu là "xoá cái cũ, tạo cái mới". Khai báo trong mã bằng khối <code>moved</code> (Terraform 1.1 trở lên) để giữ nguyên tài nguyên thật:</p>
+<pre><code>moved {
+  from = aws_instance.web
+  to   = aws_instance.app
+}</code></pre>
+<p>Để <b>bỏ</b> một tài nguyên khỏi quản lý mà không xoá nó thật, dùng khối <code>removed</code> (Terraform 1.7 trở lên) với <code>lifecycle { destroy = false }</code>, hoặc <code>terraform state rm</code>.</p>
+<h2>Import tài nguyên đã có</h2>
+<p>Hạ tầng dựng tay từ trước có thể đưa vào Terraform. Từ Terraform 1.5 có khối <code>import</code> khai báo ngay trong mã và có thể sinh cấu hình mẫu:</p>
+<pre><code>import {
+  to = aws_s3_bucket.logs
+  id = "myorg-logs-bucket"
+}</code></pre>
+<pre><code>terraform plan -generate-config-out=generated.tf     # sinh mã mẫu từ tài nguyên thật (xem lại rồi chỉnh)
+terraform apply</code></pre>
+<p>Sau khi import, chạy <code>plan</code> cho tới khi <b>không còn khác biệt</b>: mã phải khớp thực tế, nếu không lần apply sau sẽ đổi tài nguyên thật.</p>
+<h2>Drift và làm mới</h2>
+<p><code>terraform plan</code> tự làm mới thông tin từ API. <code>plan -refresh-only</code> cho thấy chỉ phần drift (thực tế khác state). Khi có drift, chọn một trong hai: <b>đưa thực tế về lại mã</b> (apply) hoặc <b>sửa mã cho khớp thực tế</b> (nếu thay đổi tay là đúng).</p>
+<div class="callout warn"><b>Không bao giờ xoá state "cho gọn"</b><p>Xoá hoặc đổi tên file state thật sự khiến Terraform mất liên kết với tài nguyên đã tạo, dẫn tới tạo trùng hoặc rác không ai quản lý. Với backend từ xa, bật versioning và hạn chế ai có quyền ghi vào bucket. Trước thao tác rủi ro (<code>state mv</code>, <code>state rm</code>, đổi backend), sao lưu state: <code>terraform state pull &gt; backup.tfstate</code>.</p></div>
+<div class="callout lab"><b>State, drift và state mv</b><pre><code>mkdir -p ~/tf4 &amp;&amp; cd ~/tf4
+cat &gt; main.tf &lt;&lt;'EOF'
+terraform {
+  required_providers {
+    local = { source = "hashicorp/local" }
+  }
+}
+resource "local_file" "a" {
+  filename = "${path.module}/a.txt"
+  content  = "một"
+}
+EOF
+terraform init &gt;/dev/null &amp;&amp; terraform apply -auto-approve &gt;/dev/null
+terraform state list &amp;&amp; terraform state show local_file.a | head -8
+rm a.txt                                  # giả lập ai đó xoá tay tài nguyên
+terraform plan -refresh-only              # thấy drift: tài nguyên không còn trong thực tế
+terraform apply -auto-approve &gt;/dev/null  # tạo lại file, đưa thực tế về khớp mã
+<span class="cm"># đổi tên trong mã nhưng giữ tài nguyên: dùng moved</span>
+sed -i 's/local_file" "a"/local_file" "b"/' main.tf
+printf 'moved {\n  from = local_file.a\n  to   = local_file.b\n}\n' &gt;&gt; main.tf
+terraform plan                            # không xoá-tạo lại, chỉ di chuyển địa chỉ
+terraform state pull | head -5            # xem state thô (cẩn thận với dữ liệu nhạy cảm)
+terraform destroy -auto-approve</code></pre>
+<p>Quan sát: plan sau khi thêm <code>moved</code> nói gì về <code>local_file.a</code> và <code>local_file.b</code>?</p></div>
+</article>
+<article class="page" data-id="tf-modules" data-group="Terraform" data-title="Module: đóng gói và tái sử dụng" hidden>
+<h1>Module: đóng gói và tái sử dụng</h1>
+<p class="lead">Module là một thư mục chứa mã Terraform được gọi như một hàm: nhận biến, trả output. Dùng module để tái sử dụng và chuẩn hoá, nhưng đừng đóng gói sớm quá hay trừu tượng quá mức.</p>
+<h2>Module là gì</h2>
+<p>Mọi cấu hình Terraform đều là một module: thư mục bạn chạy lệnh là <b>root module</b>; những module nó gọi là <b>child module</b>.</p>
+<pre><code>modules/
+└── web_service/
+    ├── main.tf          # tài nguyên
+    ├── variables.tf     # đầu vào
+    └── outputs.tf       # đầu ra
+
+envs/
+└── prod/
+    └── main.tf          # gọi module</code></pre>
+<pre><code><span class="cm"># modules/web_service/variables.tf</span>
+variable "name"          { type = string }
+variable "instance_type" {
+  type    = string
+  default = "t3.micro"
+}
+variable "subnet_ids"    { type = list(string) }
+
+<span class="cm"># modules/web_service/main.tf</span>
+resource "aws_launch_template" "this" {
+  name_prefix   = "${var.name}-"
+  instance_type = var.instance_type
+}
+<span class="cm"># ... autoscaling group, security group, v.v.</span>
+
+<span class="cm"># modules/web_service/outputs.tf</span>
+output "asg_name" { value = aws_autoscaling_group.this.name }
+
+<span class="cm"># envs/prod/main.tf</span>
+module "web" {
+  source        = "../../modules/web_service"
+  name          = "shop-web"
+  instance_type = "m5.large"
+  subnet_ids    = module.network.private_subnet_ids
+}</code></pre>
+<p>Sau khi thêm hoặc đổi <code>source</code>, chạy <code>terraform init</code> để tải module. Truy cập đầu ra của module: <code>module.web.asg_name</code>.</p>
+<h2>Nguồn module</h2>
+<div class="tw"><table><tr><th><code>source</code></th><th>Ví dụ</th></tr><tr><td>Đường dẫn cục bộ</td><td><code>"../../modules/web_service"</code></td></tr><tr><td>Terraform Registry</td><td><code>"terraform-aws-modules/vpc/aws"</code> kèm <code>version = "~&gt; 5.0"</code></td></tr><tr><td>Git</td><td><code>"git::https://github.com/org/repo.git//modules/vpc?ref=v1.2.0"</code></td></tr><tr><td>Bucket/HTTP</td><td><code>"s3::https://..."</code></td></tr></table></div>
+<p>Với module từ Registry hoặc Git: <b>ghim phiên bản</b> (<code>version</code> hay <code>?ref=tag</code>) và đọc mã trước khi dùng, vì module chạy với quyền của bạn.</p>
+<h2>Thiết kế module tốt</h2>
+<ul><li><b>Một việc rõ ràng</b> (một VPC, một dịch vụ web), đặt tên theo mục đích.</li><li><b>Giao diện nhỏ</b>: ít biến, có <code>description</code> và <code>type</code>, giá trị mặc định hợp lý; ẩn chi tiết bên trong.</li><li><b>Output đủ dùng</b> cho nơi gọi (ID, ARN, endpoint), không xuất cả đống.</li><li><b>Không đặt provider cứng</b> bên trong module tái sử dụng; để nơi gọi truyền vào.</li><li><b>Có ví dụ và README</b>, và kiểm thử (<a href="#tf-pipeline">CI/CD và kiểm thử</a>).</li><li><b>Phiên bản hoá</b> bằng tag Git (semver), ghi changelog.</li></ul>
+<h2>Những lỗi thường gặp khi dùng module</h2>
+<ul><li><b>Module "bọc" quá dày</b>: một module chỉ bọc một resource kèm hàng chục biến chuyển tiếp không thêm giá trị, làm mã khó đọc hơn viết resource trực tiếp.</li><li><b>Trừu tượng hoá quá sớm</b>: tách module khi mới có một nơi dùng. Đợi tới lần lặp thứ hai hoặc ba, khi bạn thấy phần nào thật sự chung.</li><li><b>Module quá to</b> (cả hạ tầng một cục): đổi nhỏ cũng plan rất lâu và blast radius lớn.</li><li><b>Đổi tên module hoặc tài nguyên bên trong</b> mà quên khối <code>moved</code>: bị tạo lại.</li><li><b>Dùng nhiều tầng module lồng nhau</b>: khó lần theo.</li></ul>
+<h2>Composition: ghép các module nhỏ</h2>
+<p>Thay vì một module khổng lồ, ghép nhiều module nhỏ ở root:</p>
+<pre><code>module "network" { source = "../modules/network" }
+module "database" {
+  source    = "../modules/database"
+  vpc_id    = module.network.vpc_id
+  subnet_ids = module.network.private_subnet_ids
+}
+module "app" {
+  source        = "../modules/web_service"
+  subnet_ids    = module.network.private_subnet_ids
+  database_url  = module.database.endpoint
+}</code></pre>
+<div class="callout lab"><b>Tạo và gọi một module cục bộ</b><pre><code>mkdir -p ~/tf5/modules/greeting ~/tf5/root &amp;&amp; cd ~/tf5
+cat &gt; modules/greeting/main.tf &lt;&lt;'EOF'
+terraform {
+  required_providers {
+    local = { source = "hashicorp/local" }
+  }
+}
+variable "who" { type = string }
+variable "dir" { type = string }
+resource "local_file" "g" {
+  filename = "${var.dir}/hello-${var.who}.txt"
+  content  = "Xin chào, ${var.who}!\n"
+}
+output "path" { value = local_file.g.filename }
+EOF
+cat &gt; root/main.tf &lt;&lt;'EOF'
+module "an" {
+  source = "../modules/greeting"
+  who    = "an"
+  dir    = path.module
+}
+module "binh" {
+  source = "../modules/greeting"
+  who    = "binh"
+  dir    = path.module
+}
+output "files" { value = [module.an.path, module.binh.path] }
+EOF
+cd root &amp;&amp; terraform init &gt;/dev/null &amp;&amp; terraform apply -auto-approve | tail -4
+terraform state list
+terraform destroy -auto-approve &gt;/dev/null</code></pre>
+<p>Quan sát địa chỉ tài nguyên trong <code>state list</code>: chúng có dạng <code>module.an.local_file.g</code> và <code>module.binh.local_file.g</code>. Khi nào việc đóng gói thế này thực sự đáng làm?</p></div>
+</article>
+<article class="page" data-id="tf-aws" data-group="Terraform" data-title="Ví dụ thực tế: mạng và máy chủ trên AWS" hidden>
+<h1>Ví dụ thực tế: mạng và máy chủ trên AWS</h1>
+<p class="lead">Một ví dụ vừa đủ để thấy các khái niệm làm việc cùng nhau: VPC, subnet, security group, instance, kèm cách xác thực và gắn tag.</p>
+<div class="callout warn"><b>Tài nguyên AWS tốn tiền</b><p>Ví dụ dưới đây tạo tài nguyên thật trên tài khoản AWS. Dùng tài khoản thử nghiệm, đặt cảnh báo chi phí, dùng loại instance nhỏ nằm trong free tier nếu có, và luôn <code>terraform destroy</code> sau khi thử. Các tên AMI, tham số provider có thể thay đổi: đối chiếu tài liệu của provider.</p></div>
+<h2>Cấu hình provider và xác thực</h2>
+<pre><code>provider "aws" {
+  region = var.region
+  default_tags {
+    tags = {
+      Project = var.project
+      Env     = var.env
+      Managed = "terraform"
+    }
+  }
+}</code></pre>
+<p><code>default_tags</code> gắn tag cho mọi tài nguyên hỗ trợ tag: tiện cho quản lý chi phí và tìm tài nguyên do Terraform tạo.</p>
+<p>Cách xác thực (từ an toàn nhất trở xuống):</p>
+<ol><li><b>Danh tính ngắn hạn qua vai trò (assume role, OIDC)</b>: trong CI dùng OIDC để nhận quyền tạm thời, không lưu khoá (<a href="#tf-pipeline">CI/CD và kiểm thử</a>).</li><li><b>AWS SSO / profile</b> cho máy cá nhân: <code>export AWS_PROFILE=dev</code>.</li><li>Biến môi trường <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>: tránh khoá dài hạn.</li><li><b>Không</b> ghi khoá vào file <code>.tf</code>.</li></ol>
+<h2>Ví dụ: một web server sau security group</h2>
+<pre><code>variable "region"  { default = "ap-southeast-1" }
+variable "project" { default = "lab" }
+variable "env"     { default = "dev" }
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+}
+
+resource "aws_vpc" "main" {
+  cidr_block           = "10.10.0.0/16"
+  enable_dns_hostnames = true
+  tags = { Name = "${var.project}-${var.env}" }
+}
+
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+}
+
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, 1)
+  map_public_ip_on_launch = true
+  tags = { Name = "${var.project}-public" }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_security_group" "web" {
+  name   = "${var.project}-web"
+  vpc_id = aws_vpc.main.id
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "web" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.web.id]
+  user_data = &lt;&lt;-EOT
+    #!/bin/bash
+    apt-get update -y &amp;&amp; apt-get install -y nginx
+  EOT
+  tags = { Name = "${var.project}-web" }
+}
+
+output "web_ip" { value = aws_instance.web.public_ip }</code></pre>
+<p>Đối chiếu với kiến thức mạng: subnet "public" là subnet có route <code>0.0.0.0/0</code> tới Internet Gateway; security group chỉ cho phép (stateful) cổng 80. Xem <a href="https://tracviethustcs.github.io/linux-network-notes/#net-cloud" target="_blank" rel="noopener">Cầu nối sang cloud</a> và <a href="https://tracviethustcs.github.io/aws-sap-study-notes/" target="_blank" rel="noopener">AWS SAP-C02 notes</a>.</p>
+<p>Điều ví dụ <b>cố ý bỏ qua</b> (cần có ở môi trường thật): SSH qua Session Manager thay vì mở cổng 22, nhiều AZ, subnet riêng với NAT, mã hoá đĩa, IMDSv2 bắt buộc (<code>metadata_options</code>), logging. Đó là lúc nên dùng module đã được cộng đồng kiểm chứng (như <code>terraform-aws-modules/vpc/aws</code>) thay vì tự viết từng resource.</p>
+<h2>Thói quen tốt khi làm việc với cloud</h2>
+<ul><li>Mọi tài nguyên có tag đủ để biết ai tạo, cho dự án nào, môi trường nào.</li><li>Đọc <code>plan</code> kỹ, đặc biệt các dòng <code>-/+</code> (thay thế) và <code>-</code> (xoá).</li><li>Chạy trong tài khoản/sub-account riêng cho từng môi trường; credentials của CI chỉ có quyền cần thiết.</li><li>Đặt <code>prevent_destroy</code> cho dữ liệu; dùng snapshot trước khi thay đổi lớn.</li><li>Với giá trị "mới nhất" (AMI), ghim hoặc chấp nhận có thay thế định kỳ.</li></ul>
+<div class="callout lab"><b>Chạy thử có kiểm soát chi phí</b><pre><code>mkdir -p ~/tf-aws &amp;&amp; cd ~/tf-aws        # dán ví dụ ở trên vào main.tf, thêm khối terraform/provider
+export AWS_PROFILE=lab
+terraform init
+terraform fmt -check &amp;&amp; terraform validate
+terraform plan -out=tfplan
+terraform show tfplan | grep -E "Plan:|will be created"
+terraform apply tfplan
+curl -s "http://$(terraform output -raw web_ip)" | head -3     # có thể cần chờ vài phút cho nginx
+terraform destroy</code></pre>
+<p>Trả lời: plan tạo bao nhiêu tài nguyên? Thứ tự tạo suy ra từ đâu? Sau <code>destroy</code> còn tài nguyên nào tính phí không (kiểm tra console)?</p></div>
+</article>
+<article class="page" data-id="tf-envs" data-group="Terraform" data-title="Quản lý nhiều môi trường" hidden>
+<h1>Quản lý nhiều môi trường</h1>
+<p class="lead">Dev, staging và production cần cùng một mã nhưng state, quyền và giá trị riêng. Cách tổ chức thư mục và state quyết định blast radius và mức độ dễ sai.</p>
+<h2>Mục tiêu</h2>
+<ul><li>Cùng một mã (module) cho mọi môi trường, chỉ khác <b>giá trị</b> (kích thước, số lượng, tên miền).</li><li><b>State riêng</b> cho từng môi trường: hỏng ở dev không chạm tới production.</li><li><b>Quyền riêng</b>: người và pipeline chỉ làm được trong môi trường họ được phép.</li><li>Đưa thay đổi lên theo thứ tự: dev, rồi staging, rồi production.</li></ul>
+<h2>Ba cách phổ biến</h2>
+<div class="tw"><table><tr><th>Cách</th><th>Mô tả</th><th>Ưu</th><th>Nhược</th></tr><tr><td><b>Thư mục theo môi trường</b> + module dùng chung</td><td><code>envs/dev</code>, <code>envs/prod</code> đều gọi <code>modules/...</code></td><td>Rõ ràng, state và backend tách hẳn, dễ gán quyền khác nhau</td><td>Lặp một ít mã gọi module</td></tr><tr><td><b>Workspace</b></td><td>Một mã, nhiều state trong cùng backend (<code>terraform workspace new prod</code>)</td><td>Ít lặp mã</td><td>Dễ nhầm workspace; cùng backend và cùng quyền; khó thể hiện khác biệt cấu hình</td></tr><tr><td><b>Một mã, tệp tfvars khác nhau</b></td><td><code>-var-file=envs/prod.tfvars</code> kèm backend cấu hình riêng lúc init</td><td>Gọn</td><td>Dễ chạy nhầm tệp; cần kỷ luật và tự động hoá</td></tr></table></div>
+<p>Hướng được dùng nhiều nhất cho nhóm: <b>thư mục theo môi trường</b>, mỗi nơi có backend riêng, và các thành phần dùng chung đóng thành module. Workspace hợp với môi trường tạm thời giống hệt nhau (nhánh thử nghiệm), ít hợp với khác biệt dev và prod thật.</p>
+<h2>Bố cục repo điển hình</h2>
+<pre><code>infra/
+├── modules/
+│   ├── network/
+│   ├── database/
+│   └── web_service/
+├── envs/
+│   ├── dev/
+│   │   ├── main.tf           # gọi module, truyền giá trị dev
+│   │   ├── backend.tf        # key = "dev/terraform.tfstate"
+│   │   └── terraform.tfvars
+│   ├── stg/
+│   └── prod/
+│       ├── main.tf
+│       ├── backend.tf        # key = "prod/terraform.tfstate", bucket/tài khoản riêng
+│       └── terraform.tfvars
+└── .github/workflows/        # pipeline: plan khi PR, apply khi merge</code></pre>
+<p>Tách tiếp theo <b>tầng</b> trong mỗi môi trường khi hạ tầng lớn: <code>network</code>, <code>data</code>, <code>app</code> mỗi cái một state riêng. Tầng ít đổi (mạng) tách khỏi tầng hay đổi (ứng dụng) để plan nhanh và rủi ro nhỏ. Tầng sau đọc output của tầng trước (data source, hoặc <code>terraform_remote_state</code>).</p>
+<h2>Backend theo môi trường</h2>
+<pre><code><span class="cm"># envs/prod/backend.tf</span>
+terraform {
+  backend "s3" {
+    bucket  = "myorg-tfstate-prod"        # bucket riêng, tài khoản riêng
+    key     = "app/terraform.tfstate"
+    region  = "ap-southeast-1"
+    encrypt = true
+  }
+}</code></pre>
+<p>State của production nằm ở <b>tài khoản và bucket riêng</b>, chỉ pipeline production (và rất ít người) được ghi. Giá trị trong backend không dùng được biến, nên cố định từng thư mục hoặc truyền lúc init: <code>terraform init -backend-config=backend-prod.hcl</code>.</p>
+<h2>Đưa thay đổi qua các môi trường</h2>
+<ol><li>Thay đổi mã module (hoặc phiên bản module) trong một nhánh.</li><li>PR chạy <code>plan</code> cho dev (và staging); review kết quả.</li><li>Merge: pipeline <code>apply</code> dev, rồi kiểm thử.</li><li>Tiếp theo staging, cuối cùng production <b>có bước duyệt thủ công</b> (xem <a href="#tf-pipeline">CI/CD</a>).</li></ol>
+<p>Module dùng chung được ghim phiên bản (<code>ref=v1.4.0</code>): nâng phiên bản ở dev trước, thấy ổn rồi mới nâng ở prod. Như vậy "promotion" là đổi <b>số phiên bản</b>, không phải sao chép mã.</p>
+<h2>Công cụ hỗ trợ</h2>
+<ul><li><b>Terragrunt</b>: lớp bọc giảm lặp cấu hình backend và biến giữa nhiều thư mục.</li><li><b>HCP Terraform (Terraform Cloud)</b>, Spacelift, env0, Scalr: nền tảng quản lý state, quyền, plan/apply theo workspace và chính sách.</li><li><b>Atlantis</b>: tự chạy plan/apply theo bình luận trên pull request.</li></ul>
+<p>Chọn khi thật sự gặp vấn đề lặp hoặc quy mô; với nhóm nhỏ, thư mục theo môi trường cộng pipeline CI thường đủ.</p>
+<div class="callout lab"><b>Hai môi trường, hai state</b><pre><code>mkdir -p ~/tf6/modules/app ~/tf6/envs/dev ~/tf6/envs/prod &amp;&amp; cd ~/tf6
+cat &gt; modules/app/main.tf &lt;&lt;'EOF'
+terraform {
+  required_providers {
+    local = { source = "hashicorp/local" }
+  }
+}
+variable "env"   { type = string }
+variable "size"  { type = number }
+resource "local_file" "cfg" {
+  filename = "${path.root}/app-${var.env}.conf"
+  content  = "env=${var.env}\nsize=${var.size}\n"
+}
+EOF
+for e in dev prod; do
+  s=1; [ $e = prod ] &amp;&amp; s=4
+  printf 'module "app" {\n  source = "../../modules/app"\n  env    = "%s"\n  size   = %s\n}\n' $e $s &gt; envs/$e/main.tf
+done
+(cd envs/dev  &amp;&amp; terraform init &gt;/dev/null &amp;&amp; terraform apply -auto-approve &gt;/dev/null &amp;&amp; cat app-dev.conf)
+(cd envs/prod &amp;&amp; terraform init &gt;/dev/null &amp;&amp; terraform apply -auto-approve &gt;/dev/null &amp;&amp; cat app-prod.conf)
+ls envs/dev envs/prod                         # mỗi môi trường có terraform.tfstate riêng
+(cd envs/dev &amp;&amp; terraform destroy -auto-approve &gt;/dev/null)   # prod không bị ảnh hưởng
+ls envs/prod/app-prod.conf
+(cd envs/prod &amp;&amp; terraform destroy -auto-approve &gt;/dev/null)</code></pre>
+<p>Quan sát: phá huỷ dev có chạm tới prod không, và vì sao? Điều gì sẽ xảy ra nếu cả hai dùng chung một file state?</p></div>
+</article>
+<article class="page" data-id="tf-pipeline" data-group="Terraform" data-title="Terraform trong CI/CD, kiểm thử và chính sách" hidden>
+<h1>Terraform trong CI/CD, kiểm thử và chính sách</h1>
+<p class="lead">Đưa Terraform vào pipeline để thay đổi hạ tầng được review, kiểm tra tự động và áp dụng bằng danh tính có kiểm soát, thay vì chạy từ laptop.</p>
+<h2>Quy trình chuẩn</h2>
+<pre class="ascii"><code>  Pull request                                    Merge vào main
+  ------------                                    ---------------
+  fmt -check -&gt; validate -&gt; tflint                 plan (lưu thành tệp)
+       |                                                  |
+  quét bảo mật/chính sách (Trivy, Checkov, OPA)    DUYỆT thủ công (với prod)
+       |                                                  |
+  terraform plan  -&gt; đăng kết quả vào PR           apply đúng tệp plan đã duyệt
+       |
+  người review đọc plan</code></pre>
+<p>Nguyên tắc: <b>review nhìn thấy plan</b>, <b>cái được apply chính là cái đã duyệt</b>, và việc apply chạy bằng <b>danh tính của pipeline</b> với quyền tối thiểu.</p>
+<h2>Pipeline mẫu với GitHub Actions</h2>
+<pre><code>name: terraform
+on:
+  pull_request:
+    paths: ["infra/**"]
+  push:
+    branches: [main]
+    paths: ["infra/**"]
+
+permissions:
+  id-token: write        # để lấy token OIDC
+  contents: read
+  pull-requests: write   # để đăng comment plan
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: infra/envs/dev}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: {terraform_version: "1.9.8"}
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::111111111111:role/gha-terraform-plan
+          aws-region: ap-southeast-1
+      - run: terraform fmt -check -recursive
+      - run: terraform init -input=false
+      - run: terraform validate
+      - run: terraform plan -input=false -out=tfplan
+      - uses: actions/upload-artifact@v4
+        with: {name: tfplan, path: infra/envs/dev/tfplan}
+
+  apply:
+    if: github.ref == 'refs/heads/main'
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: dev            # môi trường có thể yêu cầu người duyệt
+    defaults: {run: {working-directory: infra/envs/dev}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: {terraform_version: "1.9.8"}
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::111111111111:role/gha-terraform-apply
+          aws-region: ap-southeast-1
+      - uses: actions/download-artifact@v4
+        with: {name: tfplan, path: infra/envs/dev}
+      - run: terraform init -input=false
+      - run: terraform apply -input=false tfplan</code></pre>
+<p>Phiên bản action, số phiên bản Terraform và ARN trong ví dụ chỉ là minh hoạ: dùng giá trị của bạn, và ghim action theo mã băm commit nếu cần chặt chẽ hơn. Chi tiết về pipeline xem <a href="https://tracviethustcs.github.io/cicd-release-notes/" target="_blank" rel="noopener">CI/CD</a>.</p>
+<p>Điểm quan trọng:</p>
+<ul><li><b>Xác thực bằng OIDC</b> (không lưu khoá AWS dài hạn trong secret của CI): AWS tin token ngắn hạn do GitHub phát hành cho đúng repo và nhánh. Vai trò <code>plan</code> (chỉ đọc) tách khỏi vai trò <code>apply</code> (ghi), và chỉ nhánh <code>main</code> mới assume được vai trò <code>apply</code>.</li><li><b>Môi trường production</b> gắn <code>environment</code> có <b>người duyệt bắt buộc</b> trước khi apply.</li><li><b>Khoá state</b> ngăn hai pipeline apply cùng lúc; đặt <code>concurrency</code> ở job để xếp hàng.</li><li><b>Lưu tệp plan</b> làm artifact để bước apply dùng đúng nó. Tệp plan có thể chứa giá trị nhạy cảm: giữ thời hạn artifact ngắn, hạn chế truy cập.</li></ul>
+<h2>Kiểm tra tĩnh và chính sách</h2>
+<div class="tw"><table><tr><th>Công cụ</th><th>Làm gì</th></tr><tr><td><code>terraform fmt -check</code>, <code>validate</code></td><td>Định dạng và cú pháp</td></tr><tr><td><b>TFLint</b></td><td>Phát hiện lỗi cấu hình, loại instance không tồn tại, vi phạm quy ước</td></tr><tr><td><b>Trivy</b> (đã hấp thụ tfsec), <b>Checkov</b></td><td>Quét cấu hình sai về bảo mật (bucket công khai, security group mở toàn bộ, thiếu mã hoá)</td></tr><tr><td><b>OPA / Conftest</b>, <b>Sentinel</b> (HashiCorp)</td><td>Chính sách tự viết: "mọi tài nguyên phải có tag Owner", "cấm instance lớn hơn X"</td></tr><tr><td><b>Infracost</b></td><td>Ước tính chi phí thay đổi ngay trong PR</td></tr></table></div>
+<p>Chạy trên <b>plan dạng JSON</b> để chính sách thấy giá trị cuối cùng:</p>
+<pre><code>terraform plan -out=tfplan
+terraform show -json tfplan &gt; tfplan.json
+conftest test tfplan.json --policy policy/
+trivy config .</code></pre>
+<h2>Kiểm thử</h2>
+<div class="tw"><table><tr><th>Mức</th><th>Cách</th></tr><tr><td>Tĩnh</td><td><code>fmt</code>, <code>validate</code>, TFLint, quét bảo mật: nhanh, chạy trên mọi PR</td></tr><tr><td>Kế hoạch</td><td><code>terraform test</code> (từ Terraform 1.6) với các <code>run</code> kiểm tra bằng <code>command = plan</code>; kiểm tra điều kiện và giá trị tính toán không cần tạo gì</td></tr><tr><td>Tích hợp</td><td><code>terraform test</code> với <code>command = apply</code> hoặc <b>Terratest</b> (Go): thật sự dựng hạ tầng trong tài khoản thử nghiệm, kiểm tra, rồi huỷ</td></tr><tr><td>Hợp đồng</td><td>Kiểm tra output và giao diện module không bị phá vỡ khi nâng phiên bản</td></tr></table></div>
+<p>Ví dụ tệp <code>tests/basic.tftest.hcl</code>:</p>
+<pre><code>run "tên_đúng_quy_ước" {
+  command = plan
+  variables {
+    env = "dev"
+  }
+  assert {
+    condition     = local.name == "app-dev"
+    error_message = "Tên tài nguyên phải theo dạng app-&lt;env&gt;."
+  }
+}</code></pre>
+<pre><code>terraform test</code></pre>
+<p>Kiểm thử tích hợp tốn tiền và thời gian: chạy ít hơn (khi đổi module, hoặc theo lịch đêm) và luôn có bước dọn dẹp chắc chắn.</p>
+<h2>Phát hiện drift theo lịch</h2>
+<p>Chạy <code>terraform plan -detailed-exitcode</code> định kỳ (mã thoát 2 nghĩa là có thay đổi): báo động khi có người sửa tay ngoài Git.</p>
+<pre><code>terraform plan -detailed-exitcode -input=false; echo "exit=$?"     # 0: không đổi, 1: lỗi, 2: có thay đổi</code></pre>
+<div class="callout lab"><b>Cổng kiểm tra cục bộ như CI</b><pre><code>cd ~/tf2                                  # dùng lại cấu hình ở bài Biến (hoặc thư mục Terraform bất kỳ)
+terraform fmt -check -recursive; echo "fmt=$?"
+terraform init -input=false &gt;/dev/null &amp;&amp; terraform validate
+terraform plan -input=false -out=tfplan -detailed-exitcode; echo "plan exit=$?"
+terraform show -json tfplan | python3 -c "import sys,json; d=json.load(sys.stdin); print([ (c['address'], c['change']['actions']) for c in d.get('resource_changes',[])])"
+mkdir -p tests &amp;&amp; cat &gt; tests/name.tftest.hcl &lt;&lt;'EOF'
+run "name" {
+  command = plan
+  assert {
+    condition     = local.name == "app-dev"
+    error_message = "tên sai"
+  }
+}
+EOF
+terraform test</code></pre>
+<p>Ghi lại mã thoát của <code>plan -detailed-exitcode</code> khi có thay đổi và khi không còn thay đổi, và cách bạn dùng nó để phát hiện drift.</p></div>
+</article>
+<article class="page" data-id="tf-troubleshooting" data-group="Terraform" data-title="Xử lý sự cố" hidden>
+<h1>Xử lý sự cố</h1>
+<p class="lead">Các lỗi Terraform thường gặp, theo khung: triệu chứng, nguyên nhân, cách xử lý an toàn. Nguyên tắc chung: đọc kỹ thông báo lỗi, giữ nguyên state, và sao lưu trước khi thao tác rủi ro.</p>
+<h2>Bật log chi tiết</h2>
+<pre><code>TF_LOG=DEBUG terraform plan 2&gt; debug.log      # mức: TRACE, DEBUG, INFO, WARN, ERROR
+TF_LOG_PATH=./tf.log TF_LOG=TRACE terraform apply</code></pre>
+<p>Log chứa cả giá trị nhạy cảm: đừng dán công khai và xoá sau khi xong.</p>
+<h2>Danh sách lỗi hay gặp</h2>
+<div class="tw"><table><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th><th>Cách xử lý</th></tr><tr><td><code>Error acquiring the state lock</code></td><td>Có lần chạy khác đang giữ khoá, hoặc lần chạy trước bị ngắt giữa chừng</td><td>Chờ lần kia xong; nếu chắc chắn không còn ai chạy, <code>terraform force-unlock LOCK_ID</code></td></tr><tr><td>Lỗi xác thực: <code>NoCredentialProviders</code>, <code>ExpiredToken</code>, <code>AccessDenied</code></td><td>Chưa đăng nhập, token hết hạn, vai trò thiếu quyền</td><td>Kiểm tra <code>aws sts get-caller-identity</code>; đăng nhập lại; xem chính sách IAM của vai trò</td></tr><tr><td><code>already exists</code> / <code>EntityAlreadyExists</code></td><td>Tài nguyên đã tồn tại thật nhưng chưa nằm trong state</td><td><code>terraform import</code> (hoặc khối <code>import</code>), rồi plan cho tới khi sạch</td></tr><tr><td>Plan muốn <b>xoá và tạo lại</b> tài nguyên</td><td>Đổi thuộc tính "bắt buộc thay thế" (<code>forces replacement</code>), hoặc đổi tên mà quên <code>moved</code>, hoặc đổi chỉ số <code>count</code></td><td>Đọc dòng <code># forces replacement</code>; thêm <code>moved</code>; dùng <code>for_each</code>; với dữ liệu thì <code>prevent_destroy</code></td></tr><tr><td><code>Cycle: ...</code></td><td>Hai tài nguyên tham chiếu lẫn nhau</td><td>Tách thuộc tính gây vòng (ví dụ security group rule thành tài nguyên riêng)</td></tr><tr><td><code>Provider produced inconsistent result after apply</code></td><td>Lỗi của provider hoặc tài nguyên đổi giữa lúc tạo</td><td>Chạy lại plan/apply; nếu lặp lại, kiểm tra phiên bản provider và báo lỗi</td></tr><tr><td><code>Invalid for_each argument</code> ... <code>known only after apply</code></td><td>Khoá của <code>for_each</code> phụ thuộc giá trị chỉ biết sau khi apply</td><td>Dùng khoá tĩnh, hoặc tách thành hai lần apply, hoặc <code>-target</code> tạm thời</td></tr><tr><td>Plan lúc nào cũng hiện thay đổi dù không sửa gì</td><td>Drift do hệ thống khác sửa thuộc tính; thuộc tính do provider chuẩn hoá khác mã</td><td><code>ignore_changes</code>, hoặc viết mã khớp giá trị thực tế</td></tr><tr><td><code>Error: Unsupported argument</code> sau khi nâng provider</td><td>Thuộc tính đã bị đổi tên hoặc bỏ</td><td>Đọc changelog và hướng dẫn nâng cấp của provider</td></tr><tr><td>Apply dừng giữa chừng, một phần tài nguyên đã tạo</td><td>Lỗi API, hết quota, mất mạng</td><td><b>Không xoá state.</b> Sửa nguyên nhân và chạy lại <code>apply</code>: những gì đã tạo đã nằm trong state</td></tr><tr><td>Xoá nhầm tài nguyên</td><td>Chạy <code>destroy</code>, hoặc plan có dòng <code>-</code> bị bỏ qua</td><td>Khôi phục từ snapshot/backup; dựng lại bằng mã; về sau dùng <code>prevent_destroy</code> và review plan</td></tr></table></div>
+<h2>Tình huống: state bị lệch với thực tế</h2>
+<ol><li>Sao lưu: <code>terraform state pull &gt; state-backup.json</code>.</li><li><code>terraform plan -refresh-only</code> để thấy drift.</li><li>Quyết định: đưa thực tế về lại mã (apply), hay sửa mã cho khớp thực tế, hay <code>import</code> thứ đang thiếu trong state, hay <code>state rm</code> thứ không còn nên quản lý.</li><li>Sau khi xử lý, <code>plan</code> phải <b>sạch</b> (không còn thay đổi ngoài ý muốn).</li></ol>
+<h2>Tình huống: tài nguyên mất trong state nhưng còn trong thực tế</h2>
+<p>Plan sẽ muốn tạo lại và thất bại vì trùng tên. Dùng <code>terraform import</code> (hoặc khối <code>import</code> với <code>plan -generate-config-out</code>) để đưa nó trở lại, rồi chỉnh mã cho khớp.</p>
+<h2>Tình huống: chạy nhầm môi trường</h2>
+<p>Triệu chứng: plan muốn xoá cả hệ thống, vì đang trỏ vào backend hoặc workspace khác. <b>Dừng, không apply.</b> Kiểm tra <code>terraform workspace show</code>, thư mục hiện tại, <code>terraform init</code> đã dùng backend nào. Phòng ngừa: thư mục theo môi trường, tên bucket/tài khoản riêng, pipeline là nơi duy nhất apply production, và <code>prevent_destroy</code> cho tài nguyên quan trọng.</p>
+<h2>Mẹo gỡ lỗi</h2>
+<pre><code>terraform console                            # thử biểu thức với state hiện tại
+terraform graph | dot -Tpng &gt; g.png          # đồ thị phụ thuộc
+terraform providers                          # provider nào, phiên bản nào
+terraform state list | grep NAME
+terraform plan -target=ADDR                  # thu hẹp để debug (không dùng làm thói quen)
+terraform validate -json</code></pre>
+<div class="callout lab"><b>Gây và sửa hai lỗi</b><pre><code>mkdir -p ~/tf7 &amp;&amp; cd ~/tf7
+cat &gt; main.tf &lt;&lt;'EOF'
+terraform {
+  required_providers {
+    local = { source = "hashicorp/local" }
+  }
+}
+resource "local_file" "x" {
+  filename = "${path.module}/x.txt"
+  content  = "một"
+}
+EOF
+terraform init &gt;/dev/null
+<span class="cm"># Lỗi 1: tài nguyên có thật nhưng không có trong state</span>
+echo "đã tồn tại" &gt; x.txt; terraform plan | grep -E "will be|Plan:"      # muốn ghi đè
+<span class="cm"># Lỗi 2: đổi tên không có moved =&gt; xoá và tạo lại</span>
+terraform apply -auto-approve &gt;/dev/null
+sed -i 's/"x"/"y"/' main.tf; terraform plan | grep -E "destroyed|created|Plan:"
+<span class="cm"># Sửa: thêm moved</span>
+printf 'moved {\n  from = local_file.x\n  to   = local_file.y\n}\n' &gt;&gt; main.tf; terraform plan | grep -E "moved|Plan:|No changes"
+terraform apply -auto-approve &gt;/dev/null; terraform destroy -auto-approve &gt;/dev/null   # dọn dẹp</code></pre>
+<p>Với mỗi lỗi: thông báo nói gì, nguyên nhân là gì, và thao tác nào là an toàn nhất? Thử thêm: mở hai terminal chạy <code>terraform apply</code> cùng lúc trên một backend S3 hoặc cục bộ để thấy khoá state hoạt động.</p></div>
+</article>
+<article class="page" data-id="an-basics" data-group="Ansible" data-title="Ansible cơ bản: kiến trúc, inventory và ad-hoc" hidden>
+<h1>Ansible cơ bản: kiến trúc, inventory và ad-hoc</h1>
+<p class="lead">Ansible cấu hình máy qua SSH mà không cần cài agent. Bạn mô tả trạng thái mong muốn của máy bằng YAML, Ansible kiểm tra và chỉ thay đổi những gì chưa khớp.</p>
+<h2>Kiến trúc</h2>
+<pre class="ascii"><code>   Control node (máy bạn/CI)                         Managed nodes (máy được quản lý)
+  +-----------------------------+   SSH (Linux)      +-----------------------+
+  | ansible, playbook, inventory| -----------------&gt; | chỉ cần SSH + Python  |
+  | module được đẩy sang, chạy, |   WinRM (Windows)  | không cài agent       |
+  | rồi xoá                     |                    +-----------------------+
+  +-----------------------------+</code></pre>
+<ul><li><b>Agentless</b>: máy đích chỉ cần SSH và Python. Ansible đẩy module nhỏ sang, chạy rồi thu kết quả.</li><li><b>Inventory</b>: danh sách máy và nhóm.</li><li><b>Module</b>: đơn vị làm việc (<code>apt</code>, <code>copy</code>, <code>service</code>, <code>template</code>...), mỗi module cố gắng idempotent.</li><li><b>Playbook</b>: tệp YAML chứa các play, mỗi play áp một danh sách tác vụ lên một nhóm máy.</li><li><b>Role</b>: gói playbook tái sử dụng (xem <a href="#an-roles">Role</a>).</li><li><b>Fact</b>: thông tin Ansible thu thập về máy đích (hệ điều hành, IP, RAM) để dùng trong điều kiện.</li></ul>
+<h2>Cài đặt và cấu hình</h2>
+<pre><code>pipx install ansible              # hoặc: pip install ansible; hoặc gói của distro
+ansible --version</code></pre>
+<p>Tệp <code>ansible.cfg</code> trong thư mục dự án:</p>
+<pre><code>[defaults]
+inventory = ./inventory/hosts.ini
+remote_user = deploy
+host_key_checking = True
+forks = 10
+stdout_callback = yaml
+
+[privilege_escalation]
+become = True
+become_method = sudo
+
+[ssh_connection]
+pipelining = True</code></pre>
+<p>Máy đích cần xác thực bằng <b>khoá SSH</b> (xem <a href="https://tracviethustcs.github.io/linux-network-notes/#lx-ssh" target="_blank" rel="noopener">SSH</a>). Tắt <code>host_key_checking</code> chỉ là tạm thời trong lab; ở môi trường thật hãy giữ nó bật.</p>
+<h2>Inventory</h2>
+<pre><code><span class="cm"># inventory/hosts.ini</span>
+[web]
+web1 ansible_host=10.0.1.11
+web2 ansible_host=10.0.1.12
+
+[db]
+db1 ansible_host=10.0.2.21
+
+[prod:children]
+web
+db
+
+[all:vars]
+ansible_user=deploy
+ansible_python_interpreter=/usr/bin/python3</code></pre>
+<p>Cùng nội dung ở dạng YAML:</p>
+<pre><code>all:
+  children:
+    web:
+      hosts:
+        web1: {ansible_host: 10.0.1.11}
+        web2: {ansible_host: 10.0.1.12}
+    db:
+      hosts:
+        db1: {ansible_host: 10.0.2.21}</code></pre>
+<p><b>Biến theo nhóm và theo máy</b> đặt trong thư mục cạnh inventory:</p>
+<pre><code>inventory/
+├── hosts.ini
+├── group_vars/
+│   ├── all.yml          # mọi máy
+│   └── web.yml          # nhóm web
+└── host_vars/
+    └── web1.yml         # riêng máy web1</code></pre>
+<p><b>Inventory động</b>: với cloud, máy thay đổi liên tục nên dùng plugin để lấy danh sách từ API (ví dụ <code>amazon.aws.aws_ec2</code> nhóm theo tag). Kiểm tra bằng <code>ansible-inventory --graph</code>.</p>
+<pre><code>ansible-inventory --graph
+ansible-inventory --host web1
+ansible web -m ping</code></pre>
+<h2>Lệnh ad-hoc</h2>
+<p>Chạy một module trên một nhóm máy mà không cần viết playbook, dùng cho việc nhanh hoặc kiểm tra:</p>
+<pre><code>ansible all -m ping                                    # kiểm tra kết nối SSH và Python
+ansible web -b -m apt -a "name=nginx state=present"    # -b: nâng quyền (become)
+ansible web -m service -a "name=nginx state=restarted" -b
+ansible all -m setup -a "filter=ansible_os_family"     # xem fact
+ansible all -m command -a "uptime"
+ansible web -m copy -a "src=index.html dest=/var/www/html/ mode=0644" -b</code></pre>
+<p>Mẫu chọn máy: <code>web</code>, <code>web:db</code> (hợp), <code>web:&amp;prod</code> (giao), <code>all:!db</code> (loại), <code>web[0]</code>, <code>--limit web1</code>.</p>
+<div class="callout lab"><b>Chạy Ansible trên chính máy bạn</b><pre><code>mkdir -p ~/an1 &amp;&amp; cd ~/an1
+printf '[local]\nlocalhost ansible_connection=local\n' &gt; hosts.ini
+ansible -i hosts.ini local -m ping
+ansible -i hosts.ini local -m setup -a "filter=ansible_distribution*"
+ansible -i hosts.ini local -m command -a "uptime"
+ansible -i hosts.ini local -m copy -a "content='xin chào\n' dest=/tmp/an1.txt"
+ansible -i hosts.ini local -m copy -a "content='xin chào\n' dest=/tmp/an1.txt"     # lần hai: changed=false
+ansible-inventory -i hosts.ini --graph</code></pre>
+<p>Quan sát: lần chạy <code>copy</code> thứ hai báo <code>changed</code> hay <code>ok</code>? Đó là idempotency.</p></div>
+</article>
+<article class="page" data-id="an-playbooks" data-group="Ansible" data-title="Playbook: tác vụ, biến, điều kiện và handler" hidden>
+<h1>Playbook: tác vụ, biến, điều kiện và handler</h1>
+<p class="lead">Playbook là tệp YAML mô tả các bước cấu hình. Vài khái niệm (module, biến, điều kiện, handler) đủ để viết phần lớn công việc hằng ngày.</p>
+<h2>Một playbook hoàn chỉnh</h2>
+<pre><code><span class="cm"># site.yml</span>
+- name: Cài đặt và cấu hình nginx
+  hosts: web
+  become: true
+  vars:
+    http_port: 8080
+  tasks:
+    - name: Cài gói nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Sinh cấu hình site từ template
+      ansible.builtin.template:
+        src: site.conf.j2
+        dest: /etc/nginx/conf.d/site.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Bảo đảm nginx chạy và bật khi boot
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded</code></pre>
+<pre><code>ansible-playbook -i inventory/hosts.ini site.yml --check --diff    # chạy thử, xem sẽ đổi gì
+ansible-playbook -i inventory/hosts.ini site.yml
+ansible-playbook site.yml --limit web1 --tags config -v</code></pre>
+<h2>Các thành phần</h2>
+<div class="tw"><table><tr><th>Thành phần</th><th>Ý nghĩa</th></tr><tr><td><b>play</b></td><td>Một khối: áp danh sách tác vụ lên một nhóm máy (<code>hosts</code>)</td></tr><tr><td><b>task</b></td><td>Một lệnh gọi module, có <code>name</code> mô tả rõ</td></tr><tr><td><b>module</b></td><td>Đơn vị làm việc; dùng <b>tên đầy đủ</b> (<code>ansible.builtin.apt</code>) cho rõ nguồn gốc</td></tr><tr><td><code>become</code></td><td>Chạy với quyền cao (sudo)</td></tr><tr><td><code>vars</code>, <code>vars_files</code>, <code>group_vars</code></td><td>Biến</td></tr><tr><td><code>handlers</code></td><td>Tác vụ chỉ chạy khi được <code>notify</code> và có thay đổi</td></tr><tr><td><code>tags</code></td><td>Nhãn để chạy một phần</td></tr></table></div>
+<h2>Module hay dùng</h2>
+<div class="tw"><table><tr><th>Việc</th><th>Module</th></tr><tr><td>Gói</td><td><code>ansible.builtin.apt</code>, <code>ansible.builtin.dnf</code>, <code>ansible.builtin.package</code></td></tr><tr><td>File</td><td><code>ansible.builtin.copy</code>, <code>ansible.builtin.template</code>, <code>ansible.builtin.file</code> (quyền, thư mục, symlink), <code>ansible.builtin.lineinfile</code>, <code>ansible.builtin.blockinfile</code></td></tr><tr><td>Dịch vụ</td><td><code>ansible.builtin.service</code>, <code>ansible.builtin.systemd</code></td></tr><tr><td>Người dùng</td><td><code>ansible.builtin.user</code>, <code>ansible.builtin.group</code>, <code>ansible.posix.authorized_key</code></td></tr><tr><td>Mã nguồn</td><td><code>ansible.builtin.git</code>, <code>ansible.builtin.unarchive</code>, <code>ansible.builtin.get_url</code></td></tr><tr><td>Lệnh</td><td><code>ansible.builtin.command</code> (không qua shell), <code>ansible.builtin.shell</code> (qua shell, dùng khi cần pipe)</td></tr><tr><td>Firewall</td><td><code>community.general.ufw</code>, <code>ansible.posix.firewalld</code></td></tr><tr><td>Docker</td><td><code>community.docker.docker_container</code>, <code>docker_image</code></td></tr><tr><td>Chờ và kiểm tra</td><td><code>ansible.builtin.wait_for</code>, <code>ansible.builtin.uri</code>, <code>ansible.builtin.assert</code></td></tr></table></div>
+<p><b>Ưu tiên module chuyên biệt hơn <code>command</code>/<code>shell</code></b>: module biết kiểm tra trạng thái và idempotent, còn <code>command</code> luôn báo <code>changed</code>. Khi buộc dùng <code>command</code>, thêm <code>creates:</code>, <code>removes:</code> hoặc <code>changed_when:</code> để nó idempotent:</p>
+<pre><code>- name: Khởi tạo database một lần
+  ansible.builtin.command: /opt/app/bin/initdb
+  args:
+    creates: /var/lib/app/.initialized</code></pre>
+<h2>Biến, vòng lặp và điều kiện</h2>
+<pre><code>- name: Tạo nhiều người dùng
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    groups: "{{ item.groups | default('') }}"
+    shell: /bin/bash
+  loop:
+    - {name: alice, groups: sudo}
+    - {name: bob}
+
+- name: Lưu kết quả để dùng sau
+  ansible.builtin.command: nginx -v
+  register: nginx_version
+  changed_when: false
+
+- name: In ra
+  ansible.builtin.debug:
+    msg: "Phiên bản: {{ nginx_version.stderr }}"
+  when: nginx_version.rc == 0</code></pre>
+<ul><li>Biến dùng cú pháp Jinja2 <code>{{ ten }}</code>; khi giá trị bắt đầu bằng biến phải đặt trong dấu nháy.</li><li><code>register</code> lưu kết quả tác vụ; <code>when</code> đặt điều kiện (biểu thức Jinja2 không cần <code>{{ }}</code>).</li><li><b>Thứ tự ưu tiên biến</b> (từ thấp tới cao): giá trị mặc định của role, <code>group_vars</code>/<code>host_vars</code>, biến của play, biến của tác vụ, rồi cuối cùng <code>-e</code> (extra vars) thắng tất cả. Tránh phụ thuộc vào các tầng quá nhiều: đặt biến ở <b>một nơi rõ ràng</b>.</li></ul>
+<h2>Template Jinja2</h2>
+<pre><code><span class="cm"># templates/site.conf.j2</span>
+server {
+    listen {{ http_port }};
+    server_name {{ ansible_fqdn }};
+{% for upstream in app_servers %}
+    # upstream {{ loop.index }}: {{ upstream }}
+{% endfor %}
+    location / { proxy_pass http://{{ app_servers[0] }}; }
+}</code></pre>
+<h2>Handler và thứ tự</h2>
+<p>Handler chỉ chạy <b>một lần ở cuối play</b> và chỉ khi có tác vụ <code>notify</code> nó <b>thực sự thay đổi</b> gì đó: nhờ vậy nginx chỉ reload khi cấu hình đổi. Cần chạy sớm hơn thì dùng <code>ansible.builtin.meta: flush_handlers</code>.</p>
+<h2>Chạy thử và gỡ lỗi</h2>
+<pre><code>ansible-playbook site.yml --syntax-check        # kiểm tra cú pháp
+ansible-playbook site.yml --check --diff        # mô phỏng, hiện khác biệt (không phải module nào cũng hỗ trợ)
+ansible-playbook site.yml -v                    # -vv, -vvv: chi tiết hơn
+ansible-playbook site.yml --start-at-task "Sinh cấu hình site từ template"
+ansible-playbook site.yml --step                # hỏi xác nhận từng tác vụ
+ansible-lint site.yml                           # kiểm tra theo thực hành tốt</code></pre>
+<div class="callout lab"><b>Playbook đầu tiên chạy trên localhost</b><pre><code>mkdir -p ~/an2 &amp;&amp; cd ~/an2
+printf '[local]\nlocalhost ansible_connection=local\n' &gt; hosts.ini
+cat &gt; site.yml &lt;&lt;'EOF'
+- name: Cấu hình thử trên máy này
+  hosts: local
+  vars:
+    greeting: "Xin chào từ Ansible"
+  tasks:
+    - name: Tạo thư mục làm việc
+      ansible.builtin.file:
+        path: /tmp/an2
+        state: directory
+        mode: "0755"
+    - name: Ghi file từ template inline
+      ansible.builtin.copy:
+        dest: /tmp/an2/hello.txt
+        content: "{{ greeting }} - máy {{ ansible_hostname }}\n"
+      notify: Báo đã đổi
+    - name: Chạy lệnh một lần
+      ansible.builtin.command: touch /tmp/an2/marker
+      args:
+        creates: /tmp/an2/marker
+  handlers:
+    - name: Báo đã đổi
+      ansible.builtin.debug:
+        msg: "file đã thay đổi"
+EOF
+ansible-playbook -i hosts.ini site.yml --check --diff
+ansible-playbook -i hosts.ini site.yml
+ansible-playbook -i hosts.ini site.yml        # lần hai: changed=0, handler không chạy</code></pre>
+<p>Quan sát: ở lần chạy thứ hai <code>changed</code> bằng bao nhiêu, và handler có chạy không?</p></div>
+</article>
+<article class="page" data-id="an-roles" data-group="Ansible" data-title="Role, collection và Vault" hidden>
+<h1>Role, collection và Vault</h1>
+<p class="lead">Role gom tác vụ, template, biến và handler thành một đơn vị tái sử dụng. Collection là cách phân phối module và role. Vault bảo vệ bí mật trong repo.</p>
+<h2>Cấu trúc role</h2>
+<pre><code>roles/
+└── nginx/
+    ├── tasks/main.yml        # các tác vụ chính
+    ├── handlers/main.yml     # handler
+    ├── templates/site.conf.j2
+    ├── files/                # file tĩnh để copy
+    ├── defaults/main.yml     # biến mặc định, ưu tiên THẤP: người dùng role ghi đè dễ
+    ├── vars/main.yml         # biến nội bộ role, ưu tiên cao
+    └── meta/main.yml         # phụ thuộc và thông tin</code></pre>
+<pre><code><span class="cm"># roles/nginx/defaults/main.yml</span>
+nginx_port: 80
+nginx_server_name: "{{ ansible_fqdn }}"
+
+<span class="cm"># roles/nginx/tasks/main.yml</span>
+- name: Cài nginx
+  ansible.builtin.package:
+    name: nginx
+    state: present
+- name: Cấu hình site
+  ansible.builtin.template:
+    src: site.conf.j2
+    dest: /etc/nginx/conf.d/site.conf
+    mode: "0644"
+  notify: Reload nginx
+- name: Chạy nginx
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true</code></pre>
+<p>Dùng role trong playbook:</p>
+<pre><code>- hosts: web
+  become: true
+  roles:
+    - role: nginx
+      vars:
+        nginx_port: 8080
+    - role: hardening</code></pre>
+<p>Nên đặt biến mà người dùng role có thể muốn đổi vào <code>defaults/</code>, còn <code>vars/</code> cho thứ nội bộ không nên bị ghi đè. <b>Đặt tiền tố tên role</b> cho mọi biến (<code>nginx_port</code>) để tránh đụng nhau giữa các role.</p>
+<h2>Collection và Galaxy</h2>
+<p><b>Collection</b> là gói phân phối module, plugin và role; tên dạng <code>namespace.collection</code> (<code>community.docker</code>, <code>amazon.aws</code>, <code>ansible.posix</code>). Module trong collection gọi bằng tên đầy đủ.</p>
+<pre><code>ansible-galaxy collection install community.docker
+ansible-galaxy collection install -r requirements.yml</code></pre>
+<pre><code><span class="cm"># requirements.yml: ghim phiên bản để lặp lại được</span>
+collections:
+  - name: community.docker
+    version: "&gt;=3.0.0,&lt;4.0.0"
+  - name: amazon.aws
+roles:
+  - name: geerlingguy.nginx
+    version: "3.2.0"</code></pre>
+<p>Role và collection từ Galaxy do cộng đồng viết: <b>đọc mã và ghim phiên bản</b> trước khi dùng, vì chúng chạy với quyền root trên máy của bạn.</p>
+<h2>Ansible Vault</h2>
+<p>Vault mã hoá file hoặc từng giá trị để bí mật có thể nằm trong Git.</p>
+<pre><code>ansible-vault create group_vars/prod/vault.yml          # tạo file mã hoá
+ansible-vault edit group_vars/prod/vault.yml
+ansible-vault view group_vars/prod/vault.yml
+ansible-vault encrypt_string 's3cr3t' --name 'db_password'    # mã hoá một giá trị, dán vào YAML
+ansible-vault rekey group_vars/prod/vault.yml           # đổi mật khẩu vault</code></pre>
+<pre><code>ansible-playbook site.yml --ask-vault-pass
+ansible-playbook site.yml --vault-password-file ~/.vault_pass     # file ngoài Git, quyền 600</code></pre>
+<p>Thói quen tốt:</p>
+<ul><li><b>Tách biến nhạy cảm vào <code>vault.yml</code></b>, còn <code>vars.yml</code> tham chiếu chúng (<code>db_password: "{{ vault_db_password }}"</code>): đọc mã vẫn thấy biến nào tồn tại.</li><li>Mật khẩu vault <b>không nằm trong Git</b>; trong CI lấy từ kho bí mật.</li><li><code>no_log: true</code> cho tác vụ xử lý bí mật, nếu không giá trị có thể lộ trong log:</li></ul>
+<pre><code>- name: Tạo user database
+  community.postgresql.postgresql_user:
+    name: app
+    password: "{{ db_password }}"
+  no_log: true</code></pre>
+<p>Với môi trường lớn, cân nhắc lấy bí mật trực tiếp từ HashiCorp Vault hoặc kho bí mật của cloud (lookup plugin), để bí mật có vòng đời và nhật ký riêng thay vì nằm trong repo dù đã mã hoá. Xem thêm <a href="#iac-security">Bảo mật IaC</a>.</p>
+<h2>Kiểm thử role</h2>
+<ul><li><code>ansible-lint</code>: kiểm tra phong cách và lỗi thường gặp.</li><li><code>yamllint</code>: cú pháp YAML.</li><li><b>Molecule</b>: dựng container hoặc VM thử, chạy role, chạy lại để kiểm tra <b>idempotent</b> (lần hai không còn <code>changed</code>), rồi chạy kiểm tra xác minh.</li></ul>
+<div class="callout lab"><b>Viết một role nhỏ</b><pre><code>mkdir -p ~/an3/roles/motd/{tasks,templates,defaults} &amp;&amp; cd ~/an3
+printf '[local]\nlocalhost ansible_connection=local\n' &gt; hosts.ini
+echo 'motd_message: "Chào mừng"' &gt; roles/motd/defaults/main.yml
+echo 'Thông báo: {{ motd_message }} ({{ ansible_hostname }})' &gt; roles/motd/templates/motd.j2
+cat &gt; roles/motd/tasks/main.yml &lt;&lt;'EOF'
+- name: Ghi motd thử
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /tmp/motd-lab
+    mode: "0644"
+EOF
+printf -- '- hosts: local\n  roles:\n    - role: motd\n      vars: {motd_message: "Xin chào từ role"}\n' &gt; play.yml
+ansible-playbook -i hosts.ini play.yml &amp;&amp; cat /tmp/motd-lab
+ansible-playbook -i hosts.ini play.yml | grep -E "changed|ok="     # lần hai: idempotent
+echo 'mật khẩu thử' &gt; .vp &amp;&amp; chmod 600 .vp
+ansible-vault encrypt_string --vault-password-file .vp 'abc123' --name 'secret'
+rm -f .vp</code></pre>
+<p>Quan sát: biến <code>motd_message</code> lấy giá trị từ đâu (defaults hay vars truyền vào)? Chuỗi đã mã hoá của Vault trông thế nào?</p></div>
+</article>
+<article class="page" data-id="an-patterns" data-group="Ansible" data-title="Mẫu thực tế: cuốn chiếu, xử lý lỗi và hiệu năng" hidden>
+<h1>Mẫu thực tế: cuốn chiếu, xử lý lỗi và hiệu năng</h1>
+<p class="lead">Các mẫu giúp Ansible chạy an toàn ở quy mô nhiều máy: cập nhật từng đợt, xử lý lỗi, chờ dịch vụ sẵn sàng và giữ playbook idempotent.</p>
+<h2>Cập nhật cuốn chiếu (rolling)</h2>
+<p>Mặc định Ansible chạy mỗi tác vụ trên <b>mọi máy</b> của play trước khi sang tác vụ kế. Để cập nhật từng đợt nhỏ (giữ dịch vụ sống), dùng <code>serial</code>:</p>
+<pre><code>- name: Nâng cấp ứng dụng từng đợt
+  hosts: web
+  become: true
+  serial: "25%"                  # hoặc số: 2, hoặc danh sách [1, 3, "100%"]
+  max_fail_percentage: 0         # một máy lỗi là dừng, không đụng đợt tiếp
+  tasks:
+    - name: Gỡ khỏi load balancer
+      ansible.builtin.command: /usr/local/bin/lb-disable {{ inventory_hostname }}
+      delegate_to: lb1           # chạy trên máy khác, không phải máy đích
+
+    - name: Cập nhật gói ứng dụng
+      ansible.builtin.apt:
+        name: myapp={{ app_version }}
+        state: present
+      notify: Restart myapp
+
+    - name: Chờ ứng dụng sẵn sàng
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:8000/health"
+        status_code: 200
+      register: health
+      until: health.status == 200
+      retries: 20
+      delay: 3
+
+    - name: Đưa lại vào load balancer
+      ansible.builtin.command: /usr/local/bin/lb-enable {{ inventory_hostname }}
+      delegate_to: lb1
+
+  handlers:
+    - name: Restart myapp
+      ansible.builtin.service:
+        name: myapp
+        state: restarted</code></pre>
+<ul><li><code>serial</code> chia máy thành đợt; <code>max_fail_percentage</code> hoặc <code>any_errors_fatal</code> dừng cả quá trình khi có lỗi.</li><li><code>delegate_to</code> chạy tác vụ trên máy khác (load balancer, máy giám sát); <code>run_once</code> chạy một lần cho cả nhóm.</li><li><code>until</code>/<code>retries</code>/<code>delay</code> thử lại tới khi đạt điều kiện: dùng để chờ dịch vụ thật sự sẵn sàng thay vì <code>sleep</code> cố định.</li></ul>
+<h2>Xử lý lỗi</h2>
+<pre><code>- name: Triển khai có đường lui
+  block:
+    - name: Cập nhật cấu hình
+      ansible.builtin.template: {src: app.conf.j2, dest: /etc/app/app.conf}
+    - name: Reload
+      ansible.builtin.service: {name: app, state: reloaded}
+  rescue:
+    - name: Khôi phục cấu hình cũ
+      ansible.builtin.copy:
+        src: /etc/app/app.conf.bak
+        dest: /etc/app/app.conf
+        remote_src: true
+    - name: Báo lỗi
+      ansible.builtin.fail:
+        msg: "Triển khai thất bại, đã khôi phục"
+  always:
+    - name: Ghi nhật ký
+      ansible.builtin.debug:
+        msg: "kết thúc"</code></pre>
+<p><code>block</code>/<code>rescue</code>/<code>always</code> giống try/catch/finally. <code>ignore_errors: true</code> bỏ qua lỗi của một tác vụ (dùng tiết kiệm), <code>failed_when</code> và <code>changed_when</code> tự định nghĩa thế nào là lỗi và thay đổi.</p>
+<h2>Giữ playbook idempotent</h2>
+<p>Đây là chất lượng quan trọng nhất của một playbook. Kiểm tra bằng cách <b>chạy hai lần</b>: lần hai phải báo <code>changed=0</code>.</p>
+<div class="tw"><table><tr><th>Nên</th><th>Tránh</th></tr><tr><td>Module chuyên biệt (<code>apt</code>, <code>user</code>, <code>lineinfile</code>)</td><td><code>shell</code> và <code>command</code> thuần</td></tr><tr><td>Khi buộc dùng <code>command</code>: <code>creates</code>, <code>removes</code>, <code>changed_when</code></td><td>Lệnh luôn báo <code>changed</code></td></tr><tr><td><code>state: present</code>, <code>started</code>, <code>latest</code> có chủ đích</td><td>Phụ thuộc vào trạng thái từ lần chạy trước</td></tr><tr><td>Mô tả trạng thái cuối</td><td>Viết như kịch bản "làm bước A rồi B"</td></tr><tr><td><code>template</code> cho cấu hình toàn bộ file</td><td><code>lineinfile</code> rải rác nhiều chỗ làm file khó đoán</td></tr></table></div>
+<h2>Hiệu năng</h2>
+<ul><li><code>pipelining = True</code> (giảm số lần SSH), <code>forks</code> đủ lớn (mặc định 5), giữ kết nối SSH (<code>ControlPersist</code>).</li><li><code>gather_facts: false</code> khi không cần fact; hoặc <code>gather_subset</code>.</li><li>Dùng <code>async</code> và <code>poll</code> cho tác vụ chạy lâu trên nhiều máy.</li><li>Chiến lược <code>free</code> cho phép máy chạy xong tác vụ nào trước thì đi tiếp, không đợi cả nhóm.</li></ul>
+<h2>Cấu hình khi máy "tự dựng"</h2>
+<p>Ngoài kiểu đẩy (push) từ control node, có <code>ansible-pull</code>: máy tự kéo playbook từ Git theo lịch và chạy cục bộ (hợp với nhiều máy, máy ra vào liên tục). Nền tảng như AWX hoặc Ansible Automation Platform thêm giao diện, RBAC, lịch chạy và nhật ký cho việc dùng theo nhóm.</p>
+<h2>Một playbook hardening cơ bản</h2>
+<pre><code>- name: Siết cơ bản cho máy chủ mới
+  hosts: all
+  become: true
+  tasks:
+    - name: Chỉ cho đăng nhập bằng khoá
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        validate: '/usr/sbin/sshd -t -f %s'
+      notify: Reload sshd
+    - name: Không cho root đăng nhập
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin no'
+        validate: '/usr/sbin/sshd -t -f %s'
+      notify: Reload sshd
+    - name: Bật cập nhật bảo mật tự động
+      ansible.builtin.apt:
+        name: unattended-upgrades
+        state: present
+  handlers:
+    - name: Reload sshd
+      ansible.builtin.service:
+        name: ssh
+        state: reloaded</code></pre>
+<p><code>validate:</code> chạy <code>sshd -t</code> <b>trước khi</b> ghi file vào chỗ thật: cấu hình sai sẽ không được áp dụng, tránh tự khoá mình khỏi máy (<a href="https://tracviethustcs.github.io/linux-network-notes/#lx-harden" target="_blank" rel="noopener">Hardening</a>, <a href="https://tracviethustcs.github.io/linux-network-notes/#lx-ssh" target="_blank" rel="noopener">SSH</a>). Tên dịch vụ SSH là <code>ssh</code> trên Debian/Ubuntu và <code>sshd</code> trên họ RHEL.</p>
+<div class="callout lab"><b>Thử cuốn chiếu và block/rescue ngay trên máy</b><pre><code>mkdir -p ~/an4 &amp;&amp; cd ~/an4
+cat &gt; hosts.ini &lt;&lt;'EOF'
+[nodes]
+n1 ansible_connection=local
+n2 ansible_connection=local
+n3 ansible_connection=local
+n4 ansible_connection=local
+EOF
+cat &gt; roll.yml &lt;&lt;'EOF'
+- hosts: nodes
+  serial: 2
+  gather_facts: false
+  tasks:
+    - name: Bắt đầu đợt
+      ansible.builtin.debug:
+        msg: "đang xử lý {{ inventory_hostname }}"
+    - block:
+        - name: Cố ý lỗi trên n3
+          ansible.builtin.fail:
+            msg: "lỗi giả lập"
+          when: inventory_hostname == "n3"
+      rescue:
+        - name: Xử lý lỗi
+          ansible.builtin.debug:
+            msg: "đã khôi phục {{ inventory_hostname }}"
+EOF
+ansible-playbook -i hosts.ini roll.yml</code></pre>
+<p>Quan sát: các máy được xử lý theo đợt nào? <code>rescue</code> chạy trên máy nào? Thử đổi <code>serial</code> và thêm <code>max_fail_percentage: 0</code> để xem khác biệt.</p></div>
+</article>
+<article class="page" data-id="tf-vs-ansible" data-group="Kết hợp" data-title="Terraform và Ansible: phân vai và phối hợp" hidden>
+<h1>Terraform và Ansible: phân vai và phối hợp</h1>
+<p class="lead">Hai công cụ giải quyết hai bài toán khác nhau. Terraform dựng hạ tầng (mạng, máy, dịch vụ), Ansible cấu hình bên trong máy. Dùng đúng vai thì chúng bổ sung nhau; dùng lẫn lộn thì gây rối.</p>
+<h2>So sánh</h2>
+<div class="tw"><table><tr><th></th><th>Terraform</th><th>Ansible</th></tr><tr><td>Bài toán chính</td><td><b>Provision</b>: tạo, sửa, xoá tài nguyên (VPC, VM, DB, DNS)</td><td><b>Configuration</b>: cài gói, ghi file, chạy dịch vụ bên trong máy</td></tr><tr><td>Mô hình</td><td>Khai báo, có <b>state</b> và <b>plan</b></td><td>Phần lớn khai báo qua module, <b>không state</b>, chạy tuần tự</td></tr><tr><td>Cách kết nối</td><td>Gọi API của nhà cung cấp</td><td>SSH hoặc WinRM tới máy</td></tr><tr><td>Biết trước thay đổi</td><td><code>plan</code> rất đầy đủ</td><td><code>--check</code> có giới hạn tuỳ module</td></tr><tr><td>Quản lý vòng đời</td><td>Có (xoá bằng <code>destroy</code>)</td><td>Không lưu "đã tạo gì": không tự dọn thứ không còn trong playbook</td></tr><tr><td>Điểm mạnh</td><td>Hạ tầng cloud, phụ thuộc, dựng và phá toàn bộ</td><td>Cấu hình máy, quy trình, triển khai cuốn chiếu, máy vật lý</td></tr><tr><td>Điểm yếu</td><td>Cấu hình sâu bên trong máy là việc không phù hợp</td><td>Tạo hạ tầng cloud lớn khó quản lý vòng đời</td></tr></table></div>
+<p>Quy tắc đơn giản: <b>nếu thứ đó là một tài nguyên của nhà cung cấp có API, dùng Terraform; nếu là trạng thái bên trong một máy, dùng Ansible</b> (hoặc đưa vào image).</p>
+<h2>Các mô hình kết hợp</h2>
+<h3>1. Terraform dựng, cloud-init cấu hình nhẹ</h3>
+<p>Với máy đơn giản, truyền script khởi tạo qua <code>user_data</code> (cloud-init): cài gói, ghi file, chạy dịch vụ lúc khởi động. Không cần công cụ thứ hai.</p>
+<h3>2. Terraform dựng máy, Ansible cấu hình</h3>
+<pre class="ascii"><code>   terraform apply  ---&gt;  tạo VM, mạng, load balancer  ---&gt;  output: danh sách IP
+                                                                    |
+                                                          sinh inventory / inventory động
+                                                                    |
+                                                         ansible-playbook  ---&gt;  cấu hình máy</code></pre>
+<p>Truyền thông tin sang Ansible bằng:</p>
+<ul><li><b>Inventory động</b> (plugin <code>amazon.aws.aws_ec2</code>...) lọc theo tag mà Terraform đã gắn.</li><li>Hoặc Terraform ghi tệp inventory bằng <code>local_file</code> và <code>templatefile</code>:</li></ul>
+<pre><code>resource "local_file" "inventory" {
+  filename = "${path.module}/inventory.ini"
+  content  = templatefile("${path.module}/inventory.tftpl", {
+    web_ips = aws_instance.web[*].public_ip
+  })
+}</code></pre>
+<pre><code><span class="cm"># inventory.tftpl</span>
+[web]
+%{ for ip in web_ips ~}
+${ip}
+%{ endfor ~}</code></pre>
+<p>Tránh chạy Ansible bằng <code>provisioner "local-exec"</code> trong Terraform: kết quả nằm ngoài state, khó chạy lại và gỡ lỗi. Tách thành hai bước trong pipeline (Terraform rồi Ansible) rõ ràng hơn.</p>
+<h3>3. Dựng image bất biến (Packer), Terraform triển khai</h3>
+<p>Packer dựng <b>image máy</b> (AMI) có cấu hình sẵn, thường dùng Ansible làm bước cấu hình trong lúc build. Terraform sau đó chỉ tạo máy từ image. Máy không bao giờ bị cấu hình tại chỗ; thay đổi nghĩa là build image mới và thay máy. Dễ dự đoán và quay lui hơn.</p>
+<pre class="ascii"><code>   Packer (+ Ansible)  ---&gt;  image đã cấu hình  ---&gt;  Terraform: tạo/thay máy từ image  ---&gt;  máy chạy</code></pre>
+<h3>4. Container và Kubernetes</h3>
+<p>Khi ứng dụng chạy trong container, phần lớn việc cấu hình máy biến mất: Terraform dựng cluster (hoặc dùng dịch vụ quản lý như EKS) và hạ tầng xung quanh, <a href="https://tracviethustcs.github.io/k8s-study-notes/#gitops" target="_blank" rel="noopener">GitOps</a> (Flux, Argo CD) triển khai ứng dụng. Ansible còn vai trò cài đặt node khi dựng cluster on-prem (<a href="https://tracviethustcs.github.io/k8s-study-notes/#setup-node" target="_blank" rel="noopener">Chuẩn bị node</a>).</p>
+<h2>Chọn gì cho tình huống nào</h2>
+<div class="tw"><table><tr><th>Tình huống</th><th>Gợi ý</th></tr><tr><td>Dựng VPC, subnet, database, load balancer trên cloud</td><td>Terraform</td></tr><tr><td>Cài gói và cấu hình trên một đội máy ảo/vật lý sống lâu</td><td>Ansible</td></tr><tr><td>Triển khai cuốn chiếu ứng dụng lên các VM</td><td>Ansible (<code>serial</code>) hoặc image bất biến thay máy</td></tr><tr><td>Cấu hình rất ít, tạo máy là xong</td><td>Terraform + cloud-init</td></tr><tr><td>Nhiều máy giống nhau, muốn thay vì sửa</td><td>Packer + Terraform</td></tr><tr><td>Ứng dụng trên Kubernetes</td><td>Terraform cho hạ tầng, GitOps cho ứng dụng</td></tr><tr><td>Quản lý SaaS (GitHub, Datadog, Cloudflare, Vault)</td><td>Terraform (có provider)</td></tr></table></div>
+<h2>Sai lầm hay gặp</h2>
+<ul><li>Dùng Terraform <code>remote-exec</code> như một Ansible kém: cấu hình sâu trong máy không có idempotency và không có vòng đời rõ.</li><li>Dùng Ansible để tạo hạ tầng cloud lớn: không có state nên không biết cái gì đã tạo, khó xoá và khó phát hiện drift.</li><li>Hai công cụ cùng quản lý một thứ (Terraform tạo security group và Ansible cũng sửa nó): sửa chồng nhau gây drift. Mỗi tài nguyên <b>một chủ</b>.</li><li>Chạy lại Ansible trên máy sống lâu mà không ai kiểm tra: máy trôi dần khỏi playbook. Lên lịch chạy (hoặc <code>--check</code>) để phát hiện.</li></ul>
+<div class="callout lab"><b>Terraform sinh inventory cho Ansible (không cần cloud)</b><pre><code>mkdir -p ~/combo &amp;&amp; cd ~/combo
+cat &gt; main.tf &lt;&lt;'EOF'
+terraform {
+  required_providers {
+    local = { source = "hashicorp/local" }
+  }
+}
+variable "hosts" {
+  default = ["web1", "web2", "web3"]
+}
+resource "local_file" "inventory" {
+  filename = "${path.module}/inventory.ini"
+  content  = &lt;&lt;-EOT
+    [web]
+    %{ for h in var.hosts ~}
+    ${h} ansible_connection=local
+    %{ endfor ~}
+  EOT
+}
+EOF
+terraform init &gt;/dev/null &amp;&amp; terraform apply -auto-approve &gt;/dev/null
+cat inventory.ini
+ansible -i inventory.ini web -m ping
+ansible-inventory -i inventory.ini --graph
+terraform destroy -auto-approve &gt;/dev/null</code></pre>
+<p>Quan sát: danh sách máy do Terraform quyết định, Ansible chỉ đọc. Phân vai này giúp thêm một máy vào <code>var.hosts</code> là Ansible tự thấy ở lần chạy sau.</p></div>
+</article>
+<article class="page" data-id="iac-security" data-group="Kết hợp" data-title="Bảo mật IaC" hidden>
+<h1>Bảo mật IaC</h1>
+<p class="lead">IaC gom quyền thay đổi cả hạ tầng vào mã và pipeline: nó vừa giúp kiểm soát vừa tạo ra mục tiêu hấp dẫn. Bảo mật IaC là bảo vệ bí mật, quyền của pipeline, state và chuỗi cung ứng của chính các công cụ.</p>
+<h2>Bí mật</h2>
+<div class="tw"><table><tr><th>Rủi ro</th><th>Biện pháp</th></tr><tr><td>Mật khẩu, khoá API nằm trong mã <code>.tf</code>, playbook, <code>tfvars</code></td><td><b>Không đặt bí mật trong repo.</b> Dùng biến môi trường <code>TF_VAR_...</code>, kho bí mật (Vault, AWS Secrets Manager, SSM), Ansible Vault</td></tr><tr><td>Bí mật nằm trong <b>state</b> của Terraform</td><td>Mã hoá state, hạn chế quyền đọc state (xem bên dưới); ưu tiên để dịch vụ <b>tự sinh</b> mật khẩu và lưu ở kho bí mật rồi chỉ truyền tham chiếu</td></tr><tr><td>Bí mật lộ trong log CI</td><td><code>sensitive</code>, <code>no_log: true</code>, che biến trong CI; không in biến môi trường</td></tr><tr><td>Khoá dài hạn của cloud trong CI</td><td><b>OIDC</b> và danh tính ngắn hạn; xoay vòng khoá nếu bắt buộc phải dùng</td></tr><tr><td>Commit nhầm bí mật</td><td>Quét bí mật trước khi commit và trong CI (gitleaks, trufflehog); nếu đã lộ thì <b>coi như đã bị lộ</b> và xoay vòng ngay</td></tr></table></div>
+<p>Biến <code>sensitive = true</code> của Terraform chỉ ẩn khỏi hiển thị, không mã hoá trong state (<a href="#tf-state">State</a>).</p>
+<h2>Quyền của pipeline và của người</h2>
+<ul><li><b>Quyền tối thiểu</b>: vai trò <code>plan</code> chỉ đọc; vai trò <code>apply</code> chỉ trong phạm vi môi trường đó. Vai trò production chỉ nhánh <code>main</code> (và môi trường có duyệt) mới assume được.</li><li><b>Tách tài khoản/môi trường</b>: production ở tài khoản riêng, state riêng, danh tính riêng.</li><li><b>Tránh "quản trị viên cho mọi thứ"</b>: pipeline có quyền <code>AdministratorAccess</code> nghĩa là ai chiếm được pipeline là chiếm cả tài khoản. Cấp quyền theo tài nguyên Terraform cần quản lý.</li><li><b>Bảo vệ nhánh chính</b>: bắt buộc review, bắt buộc CI qua, cấm push thẳng; đây là rào chắn trước khi mã IaC tác động hạ tầng.</li><li>Với pull request từ nhánh fork hoặc bên ngoài: <b>không</b> cho chạy với bí mật hay quyền ghi.</li></ul>
+<h2>Bảo vệ state</h2>
+<ul><li>Backend từ xa, <b>mã hoá lúc lưu</b>, <b>bật versioning</b>, chặn truy cập công khai.</li><li>Quyền ghi chỉ cho pipeline; quyền đọc hạn chế vì state chứa dữ liệu nhạy cảm.</li><li>Bật nhật ký truy cập (CloudTrail, S3 access logs) để biết ai chạm vào state.</li><li>Khoá state ngăn hai lần apply đồng thời.</li></ul>
+<h2>Cấu hình hạ tầng an toàn (policy as code)</h2>
+<p>Quét cấu hình <b>trước khi apply</b> để chặn lỗi phổ biến: bucket công khai, security group mở <code>0.0.0.0/0</code> cho SSH hay database, thiếu mã hoá đĩa và database, IMDSv1, thiếu logging.</p>
+<div class="tw"><table><tr><th>Công cụ</th><th>Ghi chú</th></tr><tr><td>Trivy (<code>trivy config</code>), Checkov</td><td>Quét tệp Terraform, CloudFormation, Kubernetes manifest, Dockerfile</td></tr><tr><td>OPA / Conftest, Sentinel</td><td>Chính sách tự viết cho quy định riêng của tổ chức</td></tr><tr><td><code>ansible-lint</code></td><td>Kiểm tra playbook, gồm một số quy tắc bảo mật (quyền file, <code>no_log</code>)</td></tr></table></div>
+<p>Xem cách tích hợp trong pipeline ở <a href="#tf-pipeline">Terraform trong CI/CD</a>.</p>
+<h2>Chuỗi cung ứng của chính công cụ</h2>
+<ul><li><b>Ghim phiên bản</b> Terraform, provider (lock file), module (<code>version</code> hay <code>ref</code>), collection và role Ansible.</li><li>Provider và module từ Registry/Galaxy là mã chạy với quyền của bạn: ưu tiên nguồn chính thức hoặc đã kiểm chứng, đọc mã khi cần, và tránh phụ thuộc vào tác giả cá nhân không ai duy trì.</li><li>Cân nhắc <b>mirror nội bộ</b> cho provider và module để kiểm soát và không phụ thuộc mạng ngoài.</li><li>Cập nhật phiên bản có chủ đích (Renovate/Dependabot), có plan và review.</li></ul>
+<h2>Chống thay đổi ngoài ý muốn</h2>
+<ul><li><code>prevent_destroy</code> cho dữ liệu quan trọng (database, bucket sao lưu).</li><li>Bảo vệ xoá ở chính tài nguyên cloud (<code>deletion_protection</code> của RDS, MFA delete của S3).</li><li>Duyệt thủ công cho production, và đọc kỹ các dòng <code>-</code> và <code>-/+</code> trong plan.</li><li>Phát hiện drift theo lịch để nhận ra thay đổi tay ngoài Git (<a href="#tf-pipeline">CI/CD</a>).</li><li>Bật ghi nhật ký kiểm toán của cloud (CloudTrail) để truy vết ai đã làm gì.</li></ul>
+<div class="callout warn"><b>Một tệp state hay một khoá trong repo đủ để mất cả hạ tầng</b><p>Rủi ro lớn nhất của IaC thường không nằm ở công cụ mà ở nơi mọi người quên bảo vệ: bucket state công khai, khoá cloud dài hạn trong biến CI, pipeline có quyền quản trị, và bí mật đã commit. Rà soát bốn chỗ này trước tiên.</p></div>
+<div class="callout lab"><b>Quét thử một cấu hình sai</b><pre><code>mkdir -p ~/sec &amp;&amp; cd ~/sec
+cat &gt; main.tf &lt;&lt;'EOF'
+resource "aws_security_group" "bad" {
+  name = "bad"
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+resource "aws_s3_bucket" "data" {
+  bucket = "my-data-bucket-lab"
+}
+EOF
+trivy config .                    # hoặc: checkov -d .   (cần cài công cụ)
+grep -rn "password\|secret\|AKIA" . || echo "không thấy bí mật trong mã"</code></pre>
+<p>Ghi lại các cảnh báo quét được, và với mỗi cảnh báo, bạn sửa mã thế nào cho an toàn hơn?</p></div>
+</article>
+<article class="page" data-id="iac-cheatsheet" data-group="Tham chiếu" data-title="Cheat sheet Terraform và Ansible" hidden>
+<h1>Cheat sheet Terraform và Ansible</h1>
+<p class="lead">Tra nhanh theo câu hỏi "tôi muốn làm gì". Chi tiết ở các trang tương ứng.</p>
+<h2>Terraform: lệnh</h2>
+<div class="tw"><table><tr><th>Muốn</th><th>Lệnh</th></tr><tr><td>Khởi tạo</td><td><code>terraform init</code> (thêm <code>-upgrade</code> để nâng provider, <code>-migrate-state</code> khi đổi backend)</td></tr><tr><td>Định dạng, kiểm tra</td><td><code>terraform fmt -recursive</code>, <code>terraform validate</code></td></tr><tr><td>Xem trước, lưu kế hoạch</td><td><code>terraform plan</code>, <code>terraform plan -out=tfplan</code></td></tr><tr><td>Áp dụng</td><td><code>terraform apply</code>, <code>terraform apply tfplan</code>, <code>-auto-approve</code> (chỉ trong CI có kiểm soát)</td></tr><tr><td>Phá huỷ</td><td><code>terraform destroy</code></td></tr><tr><td>Ép tạo lại một tài nguyên</td><td><code>terraform apply -replace="ADDR"</code></td></tr><tr><td>Xem output</td><td><code>terraform output</code>, <code>terraform output -raw NAME</code>, <code>-json</code></td></tr><tr><td>Thử biểu thức</td><td><code>terraform console</code></td></tr><tr><td>Chỉ làm mới state</td><td><code>terraform plan -refresh-only</code></td></tr><tr><td>Phát hiện drift trong CI</td><td><code>terraform plan -detailed-exitcode</code> (0: không đổi, 1: lỗi, 2: có thay đổi)</td></tr><tr><td>Kiểm thử</td><td><code>terraform test</code></td></tr><tr><td>Đồ thị</td><td><code>terraform graph | dot -Tpng &gt; g.png</code></td></tr></table></div>
+<h2>Terraform: state</h2>
+<div class="tw"><table><tr><th>Muốn</th><th>Lệnh</th></tr><tr><td>Liệt kê, xem</td><td><code>terraform state list</code>, <code>terraform state show ADDR</code></td></tr><tr><td>Đổi địa chỉ</td><td><code>terraform state mv A B</code> (hoặc khối <code>moved</code>)</td></tr><tr><td>Gỡ khỏi quản lý (không xoá thật)</td><td><code>terraform state rm ADDR</code> (hoặc khối <code>removed</code>)</td></tr><tr><td>Đưa tài nguyên có sẵn vào</td><td><code>terraform import ADDR ID</code> (hoặc khối <code>import</code>)</td></tr><tr><td>Sao lưu, tải state</td><td><code>terraform state pull &gt; backup.tfstate</code></td></tr><tr><td>Gỡ khoá kẹt</td><td><code>terraform force-unlock LOCK_ID</code></td></tr><tr><td>Chuyển backend</td><td><code>terraform init -migrate-state</code></td></tr></table></div>
+<h2>Terraform: cú pháp nhanh</h2>
+<div class="tw"><table><tr><th>Cần</th><th>Viết</th></tr><tr><td>Nhiều bản, định danh bằng khoá</td><td><code>for_each = toset(var.names)</code> hoặc <code>{ for x in list : x.name =&gt; x }</code></td></tr><tr><td>Nhiều bản giống nhau, bật/tắt</td><td><code>count = var.enabled ? 1 : 0</code></td></tr><tr><td>Tránh bị xoá nhầm</td><td><code>lifecycle { prevent_destroy = true }</code></td></tr><tr><td>Thay thế không gián đoạn</td><td><code>lifecycle { create_before_destroy = true }</code></td></tr><tr><td>Bỏ qua thay đổi bên ngoài</td><td><code>lifecycle { ignore_changes = [tags] }</code></td></tr><tr><td>Đổi tên không xoá-tạo lại</td><td><code>moved { from = A  to = B }</code></td></tr><tr><td>Ghim phiên bản</td><td><code>required_version</code>, <code>required_providers { ... version = "~&gt; 5.0" }</code></td></tr><tr><td>Chia dải IP</td><td><code>cidrsubnet(var.cidr, 8, 1)</code></td></tr><tr><td>Biến nhạy cảm</td><td><code>sensitive = true</code> (vẫn nằm trong state)</td></tr></table></div>
+<h2>Terraform: thứ tự ưu tiên biến</h2>
+<p>Mặc định, rồi <code>TF_VAR_*</code>, rồi <code>terraform.tfvars</code>, rồi <code>*.auto.tfvars</code>, rồi <code>-var</code> và <code>-var-file</code> (cái sau thắng).</p>
+<h2>Ansible: lệnh</h2>
+<div class="tw"><table><tr><th>Muốn</th><th>Lệnh</th></tr><tr><td>Kiểm tra kết nối</td><td><code>ansible all -m ping</code></td></tr><tr><td>Chạy một module</td><td><code>ansible web -b -m apt -a "name=nginx state=present"</code></td></tr><tr><td>Xem fact</td><td><code>ansible HOST -m setup -a "filter=ansible_os_family"</code></td></tr><tr><td>Chạy playbook</td><td><code>ansible-playbook -i inv site.yml</code></td></tr><tr><td>Chạy thử, xem khác biệt</td><td><code>ansible-playbook site.yml --check --diff</code></td></tr><tr><td>Giới hạn máy, thẻ</td><td><code>--limit web1</code>, <code>--tags config</code>, <code>--skip-tags slow</code></td></tr><tr><td>Bắt đầu từ tác vụ</td><td><code>--start-at-task "TÊN"</code>, <code>--step</code></td></tr><tr><td>Chi tiết khi lỗi</td><td><code>-v</code>, <code>-vv</code>, <code>-vvv</code></td></tr><tr><td>Kiểm tra cú pháp, phong cách</td><td><code>--syntax-check</code>, <code>ansible-lint site.yml</code></td></tr><tr><td>Xem inventory</td><td><code>ansible-inventory --graph</code>, <code>ansible-inventory --host H</code></td></tr><tr><td>Vault</td><td><code>ansible-vault create/edit/view/encrypt/rekey</code>, <code>encrypt_string</code></td></tr><tr><td>Collection</td><td><code>ansible-galaxy collection install -r requirements.yml</code></td></tr></table></div>
+<h2>Ansible: cú pháp nhanh</h2>
+<div class="tw"><table><tr><th>Cần</th><th>Viết</th></tr><tr><td>Chỉ chạy khi có điều kiện</td><td><code>when: ansible_os_family == "Debian"</code></td></tr><tr><td>Vòng lặp</td><td><code>loop: [a, b]</code> rồi dùng <code>{{ item }}</code></td></tr><tr><td>Lưu kết quả</td><td><code>register: ket_qua</code></td></tr><tr><td>Chạy khi có thay đổi</td><td><code>notify: Tên handler</code></td></tr><tr><td>Idempotent cho <code>command</code></td><td><code>args: { creates: /path }</code> hoặc <code>changed_when: false</code></td></tr><tr><td>Quyền cao</td><td><code>become: true</code></td></tr><tr><td>Chạy trên máy khác</td><td><code>delegate_to: lb1</code></td></tr><tr><td>Cuốn chiếu</td><td><code>serial: "25%"</code>, <code>max_fail_percentage: 0</code></td></tr><tr><td>Thử lại tới khi đạt</td><td><code>until: ketqua.status == 200</code>, <code>retries: 20</code>, <code>delay: 3</code></td></tr><tr><td>Try/catch</td><td><code>block:</code>, <code>rescue:</code>, <code>always:</code></td></tr><tr><td>Ẩn bí mật khỏi log</td><td><code>no_log: true</code></td></tr></table></div>
+<h2>Trạng thái hay dùng của module</h2>
+<p><code>present</code> / <code>absent</code> (có hoặc không), <code>started</code> / <code>stopped</code> / <code>restarted</code> / <code>reloaded</code> (dịch vụ), <code>latest</code> (luôn mới nhất, cẩn thận), <code>directory</code> / <code>file</code> / <code>link</code> / <code>touch</code> (module <code>file</code>).</p>
+</article>
+<article class="page" data-id="quiz-tf" data-group="Luyện tập" data-title="Luyện tập 1: Terraform" hidden>
+<h1>Luyện tập 1: Terraform</h1>
+<p class="lead">6 câu tình huống về plan, state, vòng đời tài nguyên, module và CI/CD. Chọn đáp án rồi bấm "Kiểm tra" để xem giải thích. Kết quả được lưu trong trình duyệt.</p>
+<h2>Câu hỏi</h2>
+<div class="quiz"></div>
+<script type="application/json" class="qj">[{"q": "Bạn đổi tên khối `resource \"aws_instance\" \"web\"` thành `\"app\"` trong mã, rồi `terraform plan` hiện: \"1 to destroy, 1 to add\". Cách làm đúng để giữ nguyên máy thật mà chỉ đổi tên trong mã?", "o": ["Chạy `terraform apply -replace` để đồng bộ", "Thêm khối `moved { from = aws_instance.web  to = aws_instance.app }` (hoặc `terraform state mv`) để Terraform đổi địa chỉ trong state thay vì xoá-tạo lại", "Thêm `lifecycle { ignore_changes = all }`", "Xoá file state rồi chạy lại `terraform init`"], "a": [1], "e": "Terraform nhận diện tài nguyên bằng địa chỉ trong state; đổi tên trong mã nghĩa là \"cái cũ không còn, cái mới xuất hiện\". `moved` (hoặc `state mv`) khai báo rằng đây là cùng một tài nguyên. Xoá state làm Terraform quên mọi thứ đã tạo; `ignore_changes` không liên quan tới đổi địa chỉ."}, {"q": "Hai kỹ sư cùng chạy `terraform apply` vào cùng một thời điểm và state bị ghi đè dẫn tới hỏng. Biện pháp phòng ngừa đúng nhất?", "o": ["Lưu file state trong Git để có lịch sử", "Chỉ cho phép một người biết mật khẩu tài khoản cloud", "Dùng backend từ xa có khoá state (và mã hoá, versioning), để hai lần apply không chạy đồng thời", "Chạy `terraform apply -auto-approve` nhanh hơn"], "a": [2], "e": "Backend từ xa có khoá (S3 với khoá, DynamoDB, HCP Terraform...) đảm bảo mỗi lúc chỉ một lần chạy ghi state. State không nên nằm trong Git vì chứa dữ liệu nhạy cảm và không có cơ chế khoá."}, {"q": "Bạn dùng `count` để tạo 3 subnet từ một danh sách, rồi xoá phần tử ở giữa danh sách. Plan muốn thay thế cả phần tử cuối. Cách thiết kế nào tránh vấn đề này?", "o": ["Thêm `depends_on` cho từng subnet", "Dùng `count = length(var.subnets) + 1`", "Đổi sang `terraform apply -target`", "Dùng `for_each` với khoá có ý nghĩa (ví dụ tên subnet) để mỗi tài nguyên có danh tính ổn định, thay vì chỉ số"], "a": [3], "e": "Với `count`, tài nguyên được định danh bằng chỉ số; xoá phần tử ở giữa làm các phần tử sau bị đánh số lại và Terraform coi là thay đổi. `for_each` định danh theo khoá nên chỉ phần tử bị xoá mới bị tác động."}, {"q": "Chọn TẤT CẢ phát biểu đúng về state của Terraform.", "o": ["Nên commit file state vào Git để mọi người cùng dùng", "State có thể chứa dữ liệu nhạy cảm dưới dạng văn bản rõ, kể cả giá trị của biến đánh dấu `sensitive`", "Không nên chỉnh sửa tay file state; dùng các lệnh `terraform state`", "`terraform plan -refresh-only` giúp thấy drift giữa state và thực tế mà không đổi mã"], "a": [1, 2, 3], "e": "`sensitive` chỉ ẩn khỏi hiển thị, không mã hoá trong state. Commit state vào Git làm lộ dữ liệu và không có khoá. Nên bảo vệ state bằng backend từ xa mã hoá, và dùng `refresh-only` để quan sát drift."}, {"q": "Pipeline production của bạn dùng khoá AWS dài hạn lưu trong secret của CI và vai trò có quyền quản trị toàn bộ. Cải thiện đúng nhất?", "o": ["Lưu khoá trong file `.tfvars` đã mã hoá base64", "Dùng OIDC để nhận quyền ngắn hạn, tách vai trò `plan` (chỉ đọc) và `apply`, giới hạn quyền theo tài nguyên cần quản lý và chỉ cho nhánh chính assume vai trò apply", "Cho mọi lập trình viên dùng chung khoá để dễ gỡ lỗi", "Đổi tên secret cho khó đoán"], "a": [1], "e": "Khoá dài hạn là mục tiêu bị đánh cắp; OIDC cấp token tạm thời cho đúng repo và nhánh. Quyền tối thiểu và tách `plan`/`apply` giảm hậu quả nếu pipeline bị chiếm. Base64 không phải mã hoá."}, {"q": "Trong CI bạn chạy `terraform plan` rồi ở bước sau `terraform apply` (không dùng tệp plan). Rủi ro chính là gì, và cách khắc phục?", "o": ["`apply` luôn chậm hơn nếu không có tệp plan", "Không có rủi ro vì hai lệnh chạy ngay liền nhau", "Apply có thể tính ra kế hoạch khác với cái đã được review (mã, state hoặc thực tế đã đổi giữa chừng); lưu `plan -out=tfplan` và `apply tfplan` để áp dụng đúng kế hoạch đã duyệt", "Terraform không cho chạy `apply` sau `plan` nếu không có `-auto-approve`"], "a": [2], "e": "Cái được review phải là cái được thực thi. Lưu plan thành tệp và apply đúng tệp đó bảo đảm điều này (kèm lưu ý bảo vệ tệp plan vì có thể chứa giá trị nhạy cảm)."}]</script>
+</article>
+<article class="page" data-id="quiz-ansible" data-group="Luyện tập" data-title="Luyện tập 2: Ansible và kết hợp công cụ" hidden>
+<h1>Luyện tập 2: Ansible và kết hợp công cụ</h1>
+<p class="lead">6 câu tình huống về idempotency, handler, cuốn chiếu, Vault và phối hợp Terraform với Ansible.</p>
+<h2>Câu hỏi</h2>
+<div class="quiz"></div>
+<script type="application/json" class="qj">[{"q": "Playbook của bạn có tác vụ `ansible.builtin.command: useradd deploy`. Lần chạy đầu thành công, lần hai báo lỗi vì user đã tồn tại. Cách sửa tốt nhất?", "o": ["Đổi `command` thành `shell`", "Thêm `ignore_errors: true` cho tác vụ đó", "Chạy playbook chỉ một lần duy nhất", "Dùng module `ansible.builtin.user` với `name: deploy` và `state: present`, vì module tự kiểm tra trạng thái nên idempotent"], "a": [3], "e": "Module chuyên biệt mô tả trạng thái mong muốn và chỉ hành động khi chưa khớp. `command`/`shell` luôn chạy lệnh nên không idempotent. `ignore_errors` che lỗi chứ không giải quyết nguyên nhân; nếu buộc dùng `command`, thêm `creates` hoặc `changed_when`."}, {"q": "Bạn cập nhật `nginx.conf` bằng `template` và muốn nginx chỉ reload khi cấu hình thật sự đổi. Cơ chế đúng?", "o": ["Thêm tác vụ `service: state=restarted` ở cuối play", "Dùng `when: always`", "Dùng `notify` ở tác vụ template và định nghĩa handler `reload nginx`; handler chỉ chạy khi tác vụ báo `changed`", "Đặt `register` rồi so sánh thủ công"], "a": [2], "e": "Handler chạy một lần ở cuối play và chỉ khi có tác vụ `notify` nó thực sự thay đổi. Restart vô điều kiện làm gián đoạn dịch vụ mỗi lần chạy playbook dù không có gì đổi."}, {"q": "Bạn cần nâng cấp ứng dụng trên 20 web server mà luôn còn ít nhất phần lớn máy phục vụ, và dừng toàn bộ nếu một đợt lỗi. Cấu hình phù hợp?", "o": ["Chạy lần lượt bằng `--limit` thủ công từng máy", "Dùng `ignore_errors: true` cho cả play", "Dùng `serial` (ví dụ `\"25%\"`) để cập nhật từng đợt, `max_fail_percentage: 0` để dừng khi có lỗi, và gỡ máy khỏi load balancer bằng `delegate_to`", "Chạy playbook song song trên cả 20 máy bằng `forks: 20`"], "a": [2], "e": "`serial` chia thành đợt nhỏ, `max_fail_percentage: 0` ngăn lỗi lan sang các đợt sau, và `delegate_to` cho phép điều khiển load balancer từ máy đích. `forks` chỉ quyết định song song hoá, không phải an toàn."}, {"q": "Chọn TẤT CẢ thói quen đúng khi xử lý bí mật trong Ansible.", "o": ["Dùng `no_log: true` cho tác vụ xử lý bí mật để tránh lộ trong log", "Cân nhắc lấy bí mật từ HashiCorp Vault hoặc kho bí mật của cloud thay vì lưu trong repo", "Đặt mật khẩu dạng văn bản rõ trong `group_vars/all.yml` vì repo là riêng tư", "Mã hoá file biến nhạy cảm bằng Ansible Vault và giữ mật khẩu vault ngoài Git"], "a": [0, 1, 3], "e": "Repo riêng tư vẫn có thể bị sao chép, fork, lộ log hoặc cấp quyền rộng. Bí mật nên được mã hoá hoặc lấy lúc chạy từ kho chuyên dụng, mật khẩu vault không nằm trong Git, và log không in giá trị nhạy cảm."}, {"q": "Nhóm muốn: tạo VPC, 3 VM và load balancer trên cloud, rồi cài và cấu hình nginx trên các VM. Phân công công cụ hợp lý nhất?", "o": ["Dùng Ansible cho cả hai việc vì nó cũng có module cloud", "Terraform tạo hạ tầng (có state và plan), rồi Ansible (hoặc cloud-init, hoặc image dựng sẵn) cấu hình bên trong VM; truyền danh sách máy qua inventory động hoặc output", "Viết một script bash gọi API cloud rồi SSH vào từng máy", "Dùng Terraform `remote-exec` cho cả cấu hình bên trong VM"], "a": [1], "e": "Terraform mạnh ở vòng đời tài nguyên cloud nhờ state và plan; Ansible mạnh ở cấu hình bên trong máy. Dùng `remote-exec` như công cụ cấu hình mất idempotency và nằm ngoài state; Ansible tạo hạ tầng lớn thì khó quản lý vòng đời và drift."}, {"q": "Sau khi chạy playbook thành công, bạn chạy lại ngay lần hai để kiểm tra và thấy nhiều tác vụ vẫn báo `changed`. Điều này cho biết gì và nên làm gì?", "o": ["Cần tăng `forks`", "Playbook đã hoàn hảo và nên đẩy lên production ngay", "Bình thường, Ansible luôn báo `changed` ở mọi lần chạy", "Có tác vụ không idempotent (thường do `command`/`shell` hoặc nội dung tạo ra thay đổi mỗi lần); tìm các tác vụ đó và dùng module chuyên biệt, `creates`/`changed_when`, hoặc làm nội dung ổn định"], "a": [3], "e": "Lần chạy thứ hai trên máy đã khớp phải báo `changed=0`. Nếu không, bạn không thể chạy lại một cách an toàn hay dùng `--check` để phát hiện drift. Các thủ phạm thường là `command`/`shell` và template chứa giá trị đổi liên tục (thời gian, giá trị ngẫu nhiên)."}]</script>
+</article>
+
+    <footer>
+      <p style="margin:0 0 8px"><a href="https://tracviethustcs.github.io/">← Về trang chủ Trác Việt</a></p>
+      <p style="margin:0 0 8px"><b style="color:var(--ink)">Soạn bởi Trác Việt</b> (<a href="https://github.com/TracVietHustCS" target="_blank" rel="noopener">@TracVietHustCS</a>)</p>
+      Ghi chú tự học, tự soạn, không phải tài liệu chính thức của HashiCorp, IBM hay Red Hat. Terraform là nhãn hiệu của HashiCorp; Ansible là nhãn hiệu của Red Hat. Cú pháp, tên provider và tính năng thay đổi theo phiên bản: hãy đối chiếu tài liệu hiện hành và chạy thử trong môi trường lab (đặc biệt <code>terraform apply</code> và <code>destroy</code>, <code>ansible-playbook</code> trên máy thật). Đừng chạy trên hạ tầng production nếu chưa hiểu kế hoạch thay đổi.
+    </footer>
+  </main>
+
+  <nav id="toc" aria-label="Trong trang này"></nav>
+</div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const pages=$$('.page');
+const index=pages.map(p=>p.textContent.toLowerCase());
+let read={};
+try{read=JSON.parse(localStorage.getItem('iac-read')||'{}')}catch(e){}
+const saveRead=()=>{try{localStorage.setItem('iac-read',JSON.stringify(read))}catch(e){}};
+
+/* sidebar */
+const groups=[];
+pages.forEach(p=>{
+  let g=groups.find(x=>x.name===p.dataset.group);
+  if(!g){g={name:p.dataset.group,items:[]};groups.push(g)}
+  g.items.push(p);
+});
+let current='overview';
+function buildNav(){
+  $('#side-links').innerHTML=groups.map(g=>`<div class="grp"><h3>${g.name}</h3>${g.items.map(p=>
+    `<a href="#${p.dataset.id}" data-id="${p.dataset.id}" class="${read[p.dataset.id]?'read':''}">${p.dataset.title}</a>`).join('')}</div>`).join('');
+  const n=Object.values(read).filter(Boolean).length;
+  $('#progtxt').textContent=`Đã đọc ${n}/${pages.length} trang`;
+  $('#progbar').style.width=(n/pages.length*100)+'%';
+  $$('#side-links a').forEach(a=>a.classList.toggle('on',a.dataset.id===current));
+  applyFilter();
+}
+
+/* pages */
+function show(id){
+  const page=pages.find(p=>p.dataset.id===id)||pages[0];
+  current=page.dataset.id;
+  pages.forEach(p=>p.hidden=(p!==page));
+  if(!$('.crumb',page)){
+    const c=document.createElement('div');c.className='crumb';
+    c.textContent=page.dataset.group+'  ›  '+page.dataset.title;
+    page.prepend(c);
+  }
+  $$('pre',page).forEach(pre=>{
+    if($('.copy',pre)||pre.classList.contains('ascii'))return;
+    const b=document.createElement('button');b.className='copy';b.type='button';b.textContent='Sao chép';
+    b.addEventListener('click',()=>copyCode(pre,b));
+    pre.appendChild(b);
+  });
+  $$('.mark,.pn',page).forEach(e=>e.remove());
+  const m=document.createElement('div');m.className='mark';
+  m.innerHTML=`<button type="button" aria-pressed="${!!read[current]}">${read[current]?'Đã đọc ✓':'Đánh dấu đã đọc'}</button>`;
+  m.firstChild.addEventListener('click',e=>{
+    read[current]=!read[current];saveRead();
+    e.currentTarget.setAttribute('aria-pressed',!!read[current]);
+    e.currentTarget.textContent=read[current]?'Đã đọc ✓':'Đánh dấu đã đọc';
+    buildNav();
+  });
+  page.appendChild(m);
+  const i=pages.indexOf(page),prev=pages[i-1],next=pages[i+1];
+  const pn=document.createElement('div');pn.className='pn';
+  pn.innerHTML=(prev?`<a href="#${prev.dataset.id}"><small>Trước</small>${prev.dataset.title}</a>`:'<span></span>')+
+               (next?`<a href="#${next.dataset.id}"><small>Tiếp theo</small>${next.dataset.title}</a>`:'');
+  page.appendChild(pn);
+
+  document.title=page.dataset.title+' · IaC notes';
+  buildNav();initQuiz(page);buildToc(page);
+  window.scrollTo(0,0);
+  closeSide();
+}
+function copyCode(pre,btn){
+  const text=$('code',pre).innerText;
+  const done=()=>{btn.textContent='Đã chép';setTimeout(()=>btn.textContent='Sao chép',1400)};
+  const fallback=()=>{
+    try{const r=document.createRange();r.selectNodeContents($('code',pre));
+      const s=getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');s.removeAllRanges();done();}
+    catch(e){btn.textContent='Không chép được'}
+  };
+  try{navigator.clipboard.writeText(text).then(done,fallback)}catch(e){fallback()}
+}
+
+/* on this page */
+let tocItems=[];
+function buildToc(page){
+  const hs=$$('h2,h3',page);
+  tocItems=hs.map((h,i)=>{h.id=`${current}-h${i}`;return {h,a:null}});
+  $('#toc').innerHTML='<h4>Trong trang này</h4>'+hs.map((h,i)=>`<a href="#" class="${h.tagName==='H3'?'l3':''}" data-i="${i}">${h.textContent}</a>`).join('');
+  $$('#toc a').forEach(a=>{
+    tocItems[+a.dataset.i].a=a;
+    a.addEventListener('click',e=>{e.preventDefault();tocItems[+a.dataset.i].h.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'})});
+  });
+  spy();
+}
+function spy(){
+  if(!tocItems.length)return;
+  let cur=0;
+  tocItems.forEach((t,i)=>{if(t.h.getBoundingClientRect().top<110)cur=i});
+  tocItems.forEach((t,i)=>t.a&&t.a.classList.toggle('on',i===cur));
+}
+addEventListener('scroll',spy,{passive:true});
+
+/* search */
+function applyFilter(){
+  const q=$('#q').value.trim().toLowerCase();
+  let any=false;
+  $$('.grp').forEach(g=>{
+    let vis=false;
+    $$('a',g).forEach(a=>{
+      const i=pages.findIndex(p=>p.dataset.id===a.dataset.id);
+      const hit=!q||index[i].includes(q)||a.textContent.toLowerCase().includes(q);
+      a.style.display=hit?'':'none'; if(hit)vis=true;
+    });
+    g.style.display=vis?'':'none'; if(vis)any=true;
+  });
+  $('#none').style.display=any?'none':'block';
+}
+$('#q').addEventListener('input',()=>{ if(innerWidth<=820)openSide(); applyFilter(); });
+$('#q').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const a=$$('#side-links a').find(x=>x.style.display!=='none');if(a){location.hash=a.dataset.id;}}
+});
+addEventListener('keydown',e=>{
+  if(e.key==='/'&&!/input|textarea/i.test(document.activeElement.tagName)){e.preventDefault();$('#q').focus()}
+});
+
+/* mobile sidebar */
+function openSide(){$('#side').classList.add('open');$('#scrim').classList.add('open')}
+function closeSide(){$('#side').classList.remove('open');$('#scrim').classList.remove('open')}
+$('#burger').addEventListener('click',()=>$('#side').classList.contains('open')?closeSide():openSide());
+$('#scrim').addEventListener('click',closeSide);
+
+/* theme */
+const root=document.documentElement;
+try{const t=localStorage.getItem('iac-theme');if(t)root.dataset.theme=t}catch(e){}
+$('#theme').addEventListener('click',()=>{
+  const dark=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;
+  root.dataset.theme=dark?'light':'dark';
+  try{localStorage.setItem('iac-theme',root.dataset.theme)}catch(e){}
+});
+
+
+/* ===== quiz engine ===== */
+const qesc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/`([^`]+)`/g,'<code>$1</code>');
+function initQuiz(page){
+  const box=$('.quiz',page); if(!box||box.dataset.ready) return;
+  box.dataset.ready='1';
+  const data=JSON.parse($('script.qj',page).textContent);
+  const key='iac-quiz-'+page.dataset.id;
+  let st={}; try{st=JSON.parse(localStorage.getItem(key)||'{}')}catch(e){}
+  const sum=document.createElement('div'); sum.className='qsum';
+  box.appendChild(sum);
+  const list=document.createElement('div'); box.appendChild(list);
+  const upd=()=>{
+    const done=Object.keys(st).length, ok=Object.values(st).filter(Boolean).length;
+    sum.innerHTML=`<span>Đã làm <b>${done}/${data.length}</b></span><span>Đúng <b>${ok}</b></span><span>${done?Math.round(ok/done*100)+'%':''}</span><button type="button">Làm lại</button>`;
+    $('button',sum).onclick=()=>{st={};try{localStorage.removeItem(key)}catch(e){};box.dataset.ready='';box.innerHTML='';initQuiz(page)};
+  };
+  data.forEach((d,i)=>{
+    const multi=d.a.length>1;
+    const q=document.createElement('div'); q.className='qs';
+    q.innerHTML=`<p class="qn">Câu ${i+1}</p><p class="qt">${qesc(d.q)}</p><ul class="qo">`+
+      d.o.map((t,j)=>`<li><label><input type="${multi?'checkbox':'radio'}" name="q${i}" value="${j}"><span>${qesc(t)}</span></label></li>`).join('')+
+      `</ul>${multi?`<p class="qh">Chọn ${d.a.length} đáp án</p>`:''}<button class="qb" type="button">Kiểm tra</button><div class="qe" hidden></div>`;
+    list.appendChild(q);
+    const btn=$('.qb',q), ex=$('.qe',q);
+    const finish=(picked,ok)=>{
+      q.classList.add(ok?'right':'wrong');
+      $$('li',q).forEach((li,j)=>{
+        const inp=$('input',li); inp.disabled=true;
+        if(d.a.includes(j)) li.classList.add(picked.includes(j)?'ok':'miss');
+        else if(picked.includes(j)) li.classList.add('bad');
+      });
+      ex.hidden=false; btn.disabled=true;
+      ex.innerHTML=`<b class="v">${ok?'Đúng.':'Chưa đúng.'} Đáp án: ${d.a.map(j=>String.fromCharCode(65+j)).join(', ')}</b>${qesc(d.e)}`;
+    };
+    if(i in st){ // restore state
+      $$('input',q).forEach((inp,j)=>{ if(d.a.includes(j)&&st[i]) inp.checked=true; });
+      finish(st[i]?d.a:[],st[i]);
+    }
+    btn.onclick=()=>{
+      const picked=$$('input:checked',q).map(x=>+x.value);
+      if(!picked.length){ex.hidden=false;ex.textContent='Hãy chọn đáp án trước.';return}
+      const ok=picked.length===d.a.length&&d.a.every(x=>picked.includes(x));
+      st[i]=ok; try{localStorage.setItem(key,JSON.stringify(st))}catch(e){}
+      finish(picked,ok); upd();
+    };
+  });
+  upd();
+}
+
+/* routing: only a plain #page-id is used in the hash */
+addEventListener('hashchange',()=>show(location.hash.slice(1)));
+show(location.hash.slice(1));
+</script>
+</body>
+</html>

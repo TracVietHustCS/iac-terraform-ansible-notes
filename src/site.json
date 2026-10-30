@@ -1,0 +1,12 @@
+{
+  "html_title": "IaC: Terraform và Ansible notes · Trác Việt",
+  "doc_suffix": "IaC notes",
+  "storage": "iac",
+  "brand_aria": "IaC: Terraform và Ansible notes",
+  "mk": "iac",
+  "brand_text": ["IaC · Terraform · Ansible", "notes"],
+  "home_url": "https://tracviethustcs.github.io/",
+  "nav": [["Terraform", "#tf-workflow"], ["State", "#tf-state"], ["Module", "#tf-modules"], ["Ansible", "#an-basics"], ["Kết hợp", "#tf-vs-ansible"], ["Luyện tập", "#quiz-tf"]],
+  "colors": {"acc": "#6b3fa0", "acc_d": "#55318a", "acc_dk": "#b99cf0", "onacc_dk": "#1b0f2e", "navbg": "#241a35", "navbg_dk": "#1a1327", "mark": "#844fba", "mark_ink": "#ffffff"},
+  "footer": "Ghi chú tự học, tự soạn, không phải tài liệu chính thức của HashiCorp, IBM hay Red Hat. Terraform là nhãn hiệu của HashiCorp; Ansible là nhãn hiệu của Red Hat. Cú pháp, tên provider và tính năng thay đổi theo phiên bản: hãy đối chiếu tài liệu hiện hành và chạy thử trong môi trường lab (đặc biệt <code>terraform apply</code> và <code>destroy</code>, <code>ansible-playbook</code> trên máy thật). Đừng chạy trên hạ tầng production nếu chưa hiểu kế hoạch thay đổi."
+}
